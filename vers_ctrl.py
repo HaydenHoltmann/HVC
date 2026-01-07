@@ -12,6 +12,16 @@ class HVC:
         self.cwd = os.path.dirname(os.path.abspath(__file__))
         self.ignore_content = self.process_ignore()
 
+        print(self.ignore_content[0])
+        print(self.ignore_content[1])
+
+        self.directory_files = [
+            x
+            for x in os.listdir(self.cwd)
+            if x not in self.ignore_content[0] not in self.ignore_content[1]
+        ]
+        # os.listdir(self.cwd)
+
     def init(self):
         # TODO: Change template directory to config install/wherever install files go directory
         # Install script/Installation method must create the Template folder
@@ -48,7 +58,7 @@ class HVC:
 
     def add(self, files):
         if files[0] == ".":
-            print(os.listdir(self.cwd))
+            print(self.directory_files)
         else:
             print(self.cwd)
 
@@ -58,13 +68,20 @@ class HVC:
     def process_ignore(self):
         ignore_file = open(".hvc_ignore")
         ignore_output = []
+        ignore_files = []
+        ignore_directories = []
 
         # TODO: Add support for things like file types etc. that need to be in an ignore file. You might have to separate into different lists
         for line in ignore_file:
             if line[0] == "#" or line == " " or line == "\n":
                 pass
+            elif line[0] == "/":
+                ignore_directories.append(line[1 : len(line) - 1])
             else:
-                ignore_output.append(line[: len(line) - 1])
+                ignore_files.append(line[: len(line) - 1])
+
+        ignore_output.append(ignore_directories)
+        ignore_output.append(ignore_files)
 
         ignore_file.close()
 
