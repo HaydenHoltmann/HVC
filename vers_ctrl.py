@@ -100,12 +100,19 @@ class HVC:
 
         return ignore_output
 
-    # Returns the content of a compressed object file
+    # Returns the content of a compressed object file(including index)
     def cat_content(self, hash):
-        hash_folder = hash[:2]
-        hash_file = hash[2:]
+        if hash == "index":
+            hashed_file = open(f"{self.repository_directory}/index", "rb")
 
-        hashed_file = open(f"{self.objects_directory}/{hash_folder}/{hash_file}", "rb")
+        else:
+            hash_folder = hash[:2]
+            hash_file = hash[2:]
+
+            hashed_file = open(
+                f"{self.objects_directory}/{hash_folder}/{hash_file}", "rb"
+            )
+
         toUnhash = hashed_file.read()
 
         unhashed_content = zlib.decompress(toUnhash)
