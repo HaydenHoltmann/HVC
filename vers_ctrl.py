@@ -3,6 +3,7 @@ import os
 import hashlib
 import zlib
 from pathlib import Path
+import re
 
 
 class HVC:
@@ -14,12 +15,17 @@ class HVC:
         self.repository_directory = self.cwd + "/.hvc"
         self.objects_directory = self.repository_directory + "/objects"
 
+        # if part of ignore list, don't process
         directories_ignored = [
             x for x in os.listdir(self.cwd) if x not in self.ignore_content[0]
         ]
 
         self.directory_files = [
             x for x in directories_ignored if x not in self.ignore_content[1]
+        ]
+
+        cwd_directories = [
+            x for x in os.listdir(self.cwd) if os.path.isdir(os.path.join(self.cwd, x))
         ]
 
     def init(self):
@@ -63,7 +69,7 @@ class HVC:
     def add(self, files):
         if files[0] == ".":
             # Adds all files/directories in the repository to the index
-            self.update_index(self.directory_files)
+            self.update_index("\n".join(self.directory_files))
         else:
             valid_files = []
             # Checks for valid file names
@@ -73,28 +79,24 @@ class HVC:
                 else:
                     print(f"{files[i]} not a part of this repository")
 
-            self.update_index(files)
+            self.update_index("\n".join(valid_files))
 
     def update_index(self, files):
-        self.hash_object("index", "Different stuff")
+        self.hash_object("index", files)
+        print(self.cat("index", "-p"))
 
     def process_ignore(self):
         ignore_file = open(".hvc_ignore")
         ignore_output = []
-        ignore_files = []
-        ignore_directories = []
 
         # TODO: Add support for things like file types etc. that need to be in an ignore file. You might have to separate into different lists
         for line in ignore_file:
             if line[0] == "#" or line == " " or line == "\n":
                 pass
             elif line[0] == "/":
-                ignore_directories.append(line[1 : len(line) - 1])
+                ignore_output.append(line[1 : len(line) - 1])
             else:
-                ignore_files.append(line[: len(line) - 1])
-
-        ignore_output.append(ignore_directories)
-        ignore_output.append(ignore_files)
+                ignore_output.append(line[: len(line) - 1])
 
         ignore_file.close()
 
@@ -131,3 +133,27 @@ class HVC:
             return object_type
         elif flag == "-s":
             return object_size
+
+    # Returns all the names of all the files in the directory and subdirectories, excluding those in the ignore file
+    def process_files(self):
+        files = []
+
+        the_path = Path(".")
+        file_paths = []
+
+        # Add files to file_paths
+        for i in the_path.rglob("*"):
+            file_paths.append(str(i))
+
+        ignore_paths = []
+
+        # Creates a list of paths that are in the ignore list
+        for j in range(len(self.ignore_content)):
+            for k in range(len(file_paths)):
+                if self.ignore_content[j] in file_paths[k]:
+                    ignore_paths.append(file_paths[k])
+
+        # Removes the ignore paths from the list of all the file paths and puts it in it's final list
+        files = [x for x in file_paths if x not in ignore_paths]
+
+        return files
