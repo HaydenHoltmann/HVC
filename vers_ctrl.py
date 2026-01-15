@@ -14,19 +14,7 @@ class HVC:
         self.ignore_content = self.process_ignore()
         self.repository_directory = self.cwd + "/.hvc"
         self.objects_directory = self.repository_directory + "/objects"
-
-        # if part of ignore list, don't process
-        directories_ignored = [
-            x for x in os.listdir(self.cwd) if x not in self.ignore_content[0]
-        ]
-
-        self.directory_files = [
-            x for x in directories_ignored if x not in self.ignore_content[1]
-        ]
-
-        cwd_directories = [
-            x for x in os.listdir(self.cwd) if os.path.isdir(os.path.join(self.cwd, x))
-        ]
+        self.directory_files = self.process_files()
 
     def init(self):
         # TODO: Change template directory to config install/wherever install files go directory
@@ -66,10 +54,14 @@ class HVC:
 
         path.write_bytes(zlib_content)
 
+    # Add creates an index and also adds the objects to the objects folder
+    # TODO: Add the objects functionality
     def add(self, files):
         if files[0] == ".":
             # Adds all files/directories in the repository to the index
             self.update_index("\n".join(self.directory_files))
+            for i in range(len(self.directory_files)):
+                self.hash_object("blob", self.directory_files[i])
         else:
             valid_files = []
             # Checks for valid file names
@@ -80,10 +72,11 @@ class HVC:
                     print(f"{files[i]} not a part of this repository")
 
             self.update_index("\n".join(valid_files))
+            for i in range(len(valid_files)):
+                self.hash_object("blob", valid_files[i])
 
     def update_index(self, files):
         self.hash_object("index", files)
-        print(self.cat("index", "-p"))
 
     def process_ignore(self):
         ignore_file = open(".hvc_ignore")
@@ -97,6 +90,8 @@ class HVC:
                 ignore_output.append(line[1 : len(line) - 1])
             else:
                 ignore_output.append(line[: len(line) - 1])
+
+        ignore_output.append(".hvc")
 
         ignore_file.close()
 
@@ -157,3 +152,7 @@ class HVC:
         files = [x for x in file_paths if x not in ignore_paths]
 
         return files
+
+    # Tracks changes to files
+    def status(self):
+        pass
