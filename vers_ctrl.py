@@ -55,13 +55,15 @@ class HVC:
         path.write_bytes(zlib_content)
 
     # Add creates an index and also adds the objects to the objects folder
-    # TODO: Add the objects functionality
     def add(self, files):
         if files[0] == ".":
-            # Adds all files/directories in the repository to the index
+            # Adds all files in the repository to the index
             self.update_index("\n".join(self.directory_files))
-            for i in range(len(self.directory_files)):
-                self.hash_object("blob", self.directory_files[i])
+            # Hashes and creates an object for every file in the repository
+            for i in self.directory_files:
+                if not os.path.isdir(i):
+                    object = open(i)
+                    self.hash_object("blob", object.read())
         else:
             valid_files = []
             # Checks for valid file names
@@ -72,8 +74,10 @@ class HVC:
                     print(f"{files[i]} not a part of this repository")
 
             self.update_index("\n".join(valid_files))
-            for i in range(len(valid_files)):
-                self.hash_object("blob", valid_files[i])
+            for i in valid_files:
+                if not os.path.isdir(i):
+                    object_valid = open(i)
+                    self.hash_object("blob", object_valid.read())
 
     def update_index(self, files):
         self.hash_object("index", files)
@@ -153,6 +157,46 @@ class HVC:
 
         return files
 
+    # Creates commit objects
+    def commit(self, message):
+        # TODO: Can't commit if untracked changes
+        # TODO: Create tree object for each directory
+        print(self.directory_files)
+        directories = []
+
+        # Finds directories in repository files list
+        for file in self.directory_files:
+            if os.path.isdir(file):
+                print(f"{file} is a directory")
+                directories.append(file)
+
+        for paths in directories:
+            tree_files = []
+            print(os.listdir(paths))
+
+        # TODO: Create commit object
+        # TODO: Create "master" branch file in refs
+        # TODO: Create logs for tracking changes
+        # TODO: Create and store last commit message in a COMMIT_EDITMSG file
+        pass
+
     # Tracks changes to files
     def status(self):
         pass
+
+    def get_hashes(self):
+        object_path = self.cwd + "/.hvc/objects"
+        object_folders = os.listdir(object_path)
+        output_hashes = []
+
+        for objects in object_folders:
+            for i in os.listdir(f"{object_path}/{objects}"):
+                output_hashes.append(objects + i)
+
+        return output_hashes
+
+    def test_hashes(self):
+        for hash in self.get_hashes():
+            print(self.cat(hash, "-t"))
+            print(self.cat(hash, "-p"))
+            print()
