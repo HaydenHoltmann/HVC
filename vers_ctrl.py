@@ -15,6 +15,7 @@ class HVC:
         self.repository_directory = self.cwd + "/.hvc"
         self.objects_directory = self.repository_directory + "/objects"
         self.directory_files = self.process_files()
+        self.object_types = {"blob": "000001", "tree": "000002", "commit": "000003"}
 
     def init(self):
         # TODO: Change template directory to config install/wherever install files go directory
@@ -27,7 +28,7 @@ class HVC:
         else:
             print("Directory already exists.")
 
-    def hash_object(self, obj_type, content):
+    def hash_object(self, obj_type, content, flag="-c"):
         header = f"{obj_type} {len(content.encode('utf-8'))}\0"
 
         to_hash = header + content
@@ -37,7 +38,8 @@ class HVC:
 
         sha1 = obj_hash.hexdigest()
 
-        print(sha1)
+        if flag == "-n":
+            return sha1
 
         # Compression Stuff
         zlib_content = zlib.compress(to_hash.encode("utf-8"))
@@ -161,19 +163,91 @@ class HVC:
     def commit(self, message):
         # TODO: Can't commit if untracked changes
         # TODO: Create tree object for each directory
-        print(self.directory_files)
         directories = []
+        rm_trees = []
 
-        # Finds directories in repository files list
-        for file in self.directory_files:
+        # Adds to a list only directories in the repository(used reverse to add folders in reverse order, don't need to do it again)
+        for file in reversed(self.directory_files):
             if os.path.isdir(file):
-                print(f"{file} is a directory")
                 directories.append(file)
 
-        for paths in directories:
-            tree_files = []
-            print(os.listdir(paths))
+        # Add root directory to list
+        directories.append(self.cwd)
 
+        # Track files. If folder empty, it does not become a tree object
+        for paths in directories:
+            tree_path = ""
+            # Directory has files
+            if os.listdir(paths):
+                # Creates a tree file in the parent directory
+                # TODO:Change tree objects from a .txt file to a extensionless file
+                if not os.path.dirname(paths):
+                    tree_path = f"{os.path.basename(paths)}.txt"
+                    tree = open(tree_path, "w")
+                else:
+                    tree_path = (
+                        f"{os.path.dirname(paths)}/{os.path.basename(paths)}.txt"
+                    )
+                    tree = open(tree_path, "w")
+
+                rm_trees.append(tree_path)
+                # Get a list of the files in the current path
+                tree_files = []
+                for x in os.listdir(paths):
+                    if (
+                        not os.path.isdir(f"{paths}/{x}")
+                        and x not in self.ignore_content
+                    ):
+                        tree_files.append(x)
+
+                # Hash files in path and append them to tree file
+                for file in tree_files:
+                    # TODO: When tree objects change to extensionless, this will change as well
+                    if paths == self.cwd:
+                        tree_directory = file.replace(".txt", "")
+                    else:
+                        tree_directory = f"{paths}/{file.replace('.txt', '')}"
+
+                    if tree_directory in directories:
+                        print(f"{file} is a directory.............")
+                        obj_type = "tree"
+                    else:
+                        obj_type = "blob"
+
+                    # Not creating the objects, just returning the hashes
+                    object_hash = self.hash_object(
+                        obj_type, open(f"{paths}/{file}").read(), "-n"
+                    )
+                    object_entry = [
+                        self.object_types[obj_type],
+                        obj_type,
+                        object_hash,
+                        file,
+                    ]
+
+                    tree.write(" ".join(object_entry) + "\n")
+
+                tree.close()
+
+                # Hash tree file and delete it from parent directory
+                tree = open(tree_path, "r")
+                content = tree.read()
+                print(f"The tree content: {content}")
+                self.hash_object("tree", content)
+
+                tree.close()
+
+            else:
+                # Directory does not have files
+                print()
+
+            # print(f"Tree Path: {tree_path}")
+
+        print(f"-------------------{rm_trees}-------------------------")
+        for trees in rm_trees:
+            if os.path.exists(trees):
+                os.remove(trees)
+        # print(rm_trees.remove(self.cwd))
         # TODO: Create commit object
         # TODO: Create "master" branch file in refs
         # TODO: Create logs for tracking changes
@@ -197,6 +271,9 @@ class HVC:
 
     def test_hashes(self):
         for hash in self.get_hashes():
-            print(self.cat(hash, "-t"))
+            print(f"{self.cat(hash, '-t')} {hash}")
             print(self.cat(hash, "-p"))
             print()
+
+    def test_function(self):
+        pass
