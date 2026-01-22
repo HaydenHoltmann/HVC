@@ -4,6 +4,8 @@ import hashlib
 import zlib
 from pathlib import Path
 import re
+import datetime
+import time
 
 
 class HVC:
@@ -16,6 +18,8 @@ class HVC:
         self.objects_directory = self.repository_directory + "/objects"
         self.directory_files = self.process_files()
         self.object_types = {"blob": "000001", "tree": "000002", "commit": "000003"}
+        self.variables = self.get_variables()
+        self.head = self.get_head()
 
     def init(self):
         # TODO: Change template directory to config install/wherever install files go directory
@@ -47,7 +51,6 @@ class HVC:
         # File Stuff
         if obj_type == "index":
             path = Path(".hvc/index")
-            print("Index was run")
         else:
             # path = Path(".hvc/objects/" + sha1[0:2] + "/" + sha1[2:])
             path = Path(f"{self.objects_directory}/" + sha1[0:2] + "/" + sha1[2:])
@@ -159,12 +162,14 @@ class HVC:
 
         return files
 
-    # Creates commit objects
+    # Creates commit objects. Every time a commit object is created, it will be different because the parent object in the file will be different and also the time
     def commit(self, message):
         # TODO: Can't commit if untracked changes
-        # TODO: Create tree object for each directory
+
+        # Creates tree object for each directory -------
         directories = []
         rm_trees = []
+        commit_tree = ""
 
         # Adds to a list only directories in the repository(used reverse to add folders in reverse order, don't need to do it again)
         for file in reversed(self.directory_files):
@@ -180,7 +185,8 @@ class HVC:
             # Directory has files
             if os.listdir(paths):
                 # Creates a tree file in the parent directory
-                # TODO:Change tree objects from a .txt file to a extensionless file
+                # TODO:Change tree objects from a .txt file to a extensionless file (The tree files are the only ones with the .txt
+                # because python gets confused with the folder of the same name in the current directory)
                 if not os.path.dirname(paths):
                     tree_path = f"{os.path.basename(paths)}.txt"
                     tree = open(tree_path, "w")
@@ -209,7 +215,6 @@ class HVC:
                         tree_directory = f"{paths}/{file.replace('.txt', '')}"
 
                     if tree_directory in directories:
-                        print(f"{file} is a directory.............")
                         obj_type = "tree"
                     else:
                         obj_type = "blob"
@@ -229,33 +234,153 @@ class HVC:
 
                 tree.close()
 
-                # Hash tree file and delete it from parent directory
+                # Hash tree file(This is where the tree objects are created)
                 tree = open(tree_path, "r")
                 content = tree.read()
-                print(f"The tree content: {content}")
                 self.hash_object("tree", content)
-
+                # Add root directory hash to commit_tree
+                if paths == self.cwd:
+                    commit_tree = self.hash_object("tree", content, "-n")
                 tree.close()
 
-            else:
-                # Directory does not have files
-                print()
-
-            # print(f"Tree Path: {tree_path}")
-
-        print(f"-------------------{rm_trees}-------------------------")
         for trees in rm_trees:
             if os.path.exists(trees):
                 os.remove(trees)
-        # print(rm_trees.remove(self.cwd))
-        # TODO: Create commit object
-        # TODO: Create "master" branch file in refs
-        # TODO: Create logs for tracking changes
-        # TODO: Create and store last commit message in a COMMIT_EDITMSG file
-        pass
+
+        # Creates commit object -------
+
+        # Content.txt contains the current tree and the parent commit, while the log contains the parent commit and the current commit
+        commit_file = open("commit", "w")
+        commit_content = []
+
+        commit_content.append(f"tree {commit_tree}")
+
+        # Commit Variables:
+        # commit_tree - tree hash
+        # parent_hash
+        # author
+        # message
+
+        # If no master file exists, then it is the first commit so don't add a parent. If a new branch is created, it's parent will be the commit
+        # it branches from, so it has a parent
+
+        parent_hash = "0000000000000000000000000000000000000000"
+
+        if not os.path.exists(f"{self.repository_directory}/{self.head}"):
+            print("master doesn't exist")
+        else:
+            head_branch = open(f"{self.repository_directory}/{self.head}")
+            parent_hash = head_branch.read()
+            commit_content.append(f"parent {parent_hash}")
+            head_branch.close()
+
+        commit_time = datetime.datetime.now()
+        commit_stamp = int(commit_time.timestamp())
+        commit_author = f"{self.variables['author']} {commit_stamp}"
+        commit_commiter = f"{self.variables['commiter']} {commit_stamp}"
+
+        # TODO: Add UTC offset to the timestamp
+        commit_content.append(commit_author)
+        commit_content.append(commit_commiter)
+
+        commit_content.append(f"\n{message}")
+
+        commit_file.write("\n".join(commit_content))
+
+        commit_file.close()
+
+        commit_file = open("commit", "r")
+        commit_file_content = commit_file.read()
+
+        self.hash_object("commit", commit_file_content)
+        commit_hash = self.hash_object("commit", commit_file_content, "-n")
+
+        commit_file.close()
+
+        # TODO: Delete commit.txt\
+        if os.path.exists("commit"):
+            os.remove("commit")
+
+        # Creates "master" branch file in refs -------
+        new_head_branch = open(f"{self.repository_directory}/{self.head}", "w")
+
+        new_head_branch.write(str(commit_hash))
+
+        new_head_branch.close()
+
+        # Creates logs for tracking changes -------
+
+        # If folders doesn't exist create it
+        if not os.path.exists(f"{self.repository_directory}/logs/refs/heads"):
+            os.makedirs(f"{self.repository_directory}/logs/refs/heads")
+            # add "tag" logs when creating tag
+
+        # If file doesn't exist create it
+        log_head = open(f"{self.repository_directory}/logs/{self.head}", "a")
+        log_data = []
+
+        current_head = open(f"{self.repository_directory}/{self.head}", "r")
+        current_head_content = current_head.read()
+
+        log_data.extend(
+            [parent_hash, current_head_content, commit_author, f"commit: {message}"]
+        )
+
+        current_head.close()
+
+        log_head.write(f"{' '.join(log_data)}\n")
+
+        log_head.close()
+
+        # Create HEADS in logs -------
+
+        # HEADS tracks all commits made in every branch in the order they are made as well as when branches are switched
+        head = open(f"{self.repository_directory}/logs/HEAD", "a")
+
+        head.write(f"{' '.join(log_data)}\n")
+
+        head.close()
+
+        # Create and store last commit message in a COMMIT_EDITMSG file -------
+        last_commit_msg = open(f"{self.repository_directory}/COMMIT_EDITMSG", "w")
+        last_commit_msg.write(message)
+        last_commit_msg.close()
+
+        # TODO: Message confirming commit operation is complete(Add something from status to show changes between files)
+        commit_confirmation_message = []
+
+        if parent_hash == "0000000000000000000000000000000000000000":
+            root_msg = "(root-commit)"
+        else:
+            root_msg = ""
+
+            # open status_and_commits.png
+        commit_confirmation_message.extend(
+            [
+                f"[{os.path.basename(self.head)}",
+                root_msg,
+                f"{current_head_content}] ",
+                message,
+            ]
+        )
+        print(commit_confirmation_message)
 
     # Tracks changes to files
     def status(self):
+        pass
+
+    def branch(self):
+        pass
+
+    # Switches between branches
+    def switch(self):
+        # TODO: Change value of self.head to point to the current branch
+        # TODO: Create HEAD log
+        pass
+
+    def merge(self):
+        # TODO: Create a ORIG_HEAD file that contains the hash of the previous commit, before doing a potentially dangerous operation(like merging branches)
+        # After merge is done, a new commit object is created with the updated files
         pass
 
     def get_hashes(self):
@@ -275,5 +400,25 @@ class HVC:
             print(self.cat(hash, "-p"))
             print()
 
-    def test_function(self):
+    # TODO: Retrieve from config files
+    # Responsible for retrieving local and global hvc variables
+    def get_variables(self):
+        variables = {
+            "author": "Hayden <email@gmail.com>",
+            "commiter": "Hayden <email@gmail.com>",
+            "default_branch": "master",
+        }
+
+        return variables
+
+    def get_head(self):
+        head = open(f"{self.repository_directory}/HEAD", "r")
+        head_output = head.read().replace("refs: ", "")
+        head_output = head_output.replace("\n", "")
+
+        return head_output
+
+    # Makes changes like sets default branch name or default author etc.
+    def set_config(self):
+        # TODO: Ask some of this information when hvc is first used
         pass
