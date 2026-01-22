@@ -62,15 +62,32 @@ class HVC:
     # Add creates an index and also adds the objects to the objects folder
     def add(self, files):
         if files[0] == ".":
-            # Adds all files in the repository to the index
-            self.update_index("\n".join(self.directory_files))
+            index_hashes = []
+            dir_files = []
+
             # Hashes and creates an object for every file in the repository
             for i in self.directory_files:
                 if not os.path.isdir(i):
                     object = open(i)
-                    self.hash_object("blob", object.read())
+                    object_data = object.read()
+                    self.hash_object("blob", object_data)
+                    index_hashes.append(self.hash_object("blob", object_data, "-n"))
+                    dir_files.append(i)
+
+            # Constructing index content for hashing
+            index_content = []
+            if len(dir_files) == len(index_hashes):
+                for j in range(len(dir_files)):
+                    interim_data = f"{index_hashes[j]} {dir_files[j]}"
+                    index_content.append(interim_data)
+
+            # Adds all files in the repository to the index
+            self.update_index("\n".join(index_content))
+            # TODO: Update else as well
         else:
             valid_files = []
+            valid_index_hashes = []
+
             # Checks for valid file names
             for i in range(len(files)):
                 if files[i] in self.directory_files:
@@ -78,14 +95,29 @@ class HVC:
                 else:
                     print(f"{files[i]} not a part of this repository")
 
-            self.update_index("\n".join(valid_files))
             for i in valid_files:
                 if not os.path.isdir(i):
                     object_valid = open(i)
-                    self.hash_object("blob", object_valid.read())
+                    object_valid_data = object_valid.read()
+                    self.hash_object("blob", object_valid_data)
+                    valid_index_hashes.append(
+                        self.hash_object("blob", object_valid_data, "-n")
+                    )
 
-    def update_index(self, files):
-        self.hash_object("index", files)
+            # Construct valid index content
+            valid_index_content = []
+            if len(valid_files) == len(valid_index_hashes):
+                for k in range(len(valid_files)):
+                    valid_interim_data = f"{valid_index_hashes[k]} {valid_files[k]}"
+                    valid_index_content.append(valid_interim_data)
+
+            # print("\n".join(valid_index_content))
+            self.update_index("\n".join(valid_index_content))
+
+            # Make sure all files that are a part of the index don't get overwritten and only overwrite the changed files
+
+    def update_index(self, content):
+        self.hash_object("index", content)
 
     def process_ignore(self):
         ignore_file = open(".hvc_ignore")
@@ -367,7 +399,10 @@ class HVC:
 
     # Tracks changes to files
     def status(self):
-        pass
+        branch_file = open(f"{self.repository_directory}/{self.head}", "r")
+        last_commit_hash = branch_file.read()
+
+        # print(last_commit_hash)
 
     def branch(self):
         pass
