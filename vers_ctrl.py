@@ -83,9 +83,10 @@ class HVC:
 
             # Adds all files in the repository to the index
             self.update_index("\n".join(index_content))
-            # TODO: Update else as well
         else:
+            # Files that are actually part of the directory
             valid_files = []
+            # The hash values of the valid files
             valid_index_hashes = []
 
             # Checks for valid file names
@@ -95,6 +96,7 @@ class HVC:
                 else:
                     print(f"{files[i]} not a part of this repository")
 
+            # Creating the objects, not updating index file
             for i in valid_files:
                 if not os.path.isdir(i):
                     object_valid = open(i)
@@ -104,17 +106,34 @@ class HVC:
                         self.hash_object("blob", object_valid_data, "-n")
                     )
 
-            # Construct valid index content
+            # Return values of current index
+            current_index = str(self.cat("index", "-p"))
+            index_dictionary = {}
+
+            # Split each entry into it's hash and file name values and add it to the dictionary
+            current_index_list = current_index.split("\n")
+
+            # Index content to be hashed
             valid_index_content = []
-            if len(valid_files) == len(valid_index_hashes):
-                for k in range(len(valid_files)):
-                    valid_interim_data = f"{valid_index_hashes[k]} {valid_files[k]}"
-                    valid_index_content.append(valid_interim_data)
 
-            # print("\n".join(valid_index_content))
+            for ci in current_index_list:
+                index_list = ci.split(" ")
+                current_hash = index_list[0]
+                current_file = index_list[1]
+
+                # Dictionary
+                index_dictionary[current_file] = current_hash
+
+            for i in range(len(valid_files)):
+                if valid_files[i] in index_dictionary:
+                    index_dictionary[valid_files[i]] = valid_index_hashes[i]
+
+            # Add new values from dictionary valid_index_content
+            for name in index_dictionary:
+                valid_index_content.append(f"{index_dictionary[name]} {name}")
+
+            # Hashing valid files
             self.update_index("\n".join(valid_index_content))
-
-            # Make sure all files that are a part of the index don't get overwritten and only overwrite the changed files
 
     def update_index(self, content):
         self.hash_object("index", content)
