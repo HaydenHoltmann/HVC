@@ -216,6 +216,7 @@ class HVC:
     # Creates commit objects. Every time a commit object is created, it will be different because the parent object in the file will be different and also the time
     def commit(self, message):
         # TODO: Can't commit if untracked changes
+        # TODO: Make sure you add commits to whatever branch HEAD is pointing to
 
         # Creates tree object for each directory -------
         directories = []
@@ -423,8 +424,46 @@ class HVC:
 
         # print(last_commit_hash)
 
+    # Lists branches
     def branch(self):
-        pass
+        branches = os.listdir(f"{self.repository_directory}/refs/heads")
+        current_head = os.path.basename(self.head)
+
+        for br in branches:
+            if br == current_head:
+                br = br + " *"
+
+            # Lists branches in console
+            print(br)
+
+    # Creates a new branch
+    # TODO: Don't overwrite and existing branch
+    def branch_new(self, name, commit=""):
+        new_branch = open(f"{self.repository_directory}/refs/heads/{name}", "w")
+
+        if commit == "":
+            current_branch = open(f"{self.repository_directory}/{self.head}", "r")
+            current_commit = current_branch.read()
+
+            new_branch.write(current_commit)
+            current_branch.close()
+        else:
+            hash_list = []
+            hash_folders = os.listdir(self.objects_directory)
+
+            # Find full hashes using the object folders
+            for hf in hash_folders:
+                hash_list.append(
+                    f"{hf}{os.listdir(f'{self.objects_directory}/{hf}')[0]}"
+                )
+
+            # Compare against objects
+            if commit in hash_list and self.cat(commit, "-t") == "commit":
+                new_branch.write(commit)
+            else:
+                print(f"{commit} is not a commit object in this repository")
+
+        new_branch.close()
 
     # Switches between branches
     def switch(self):
@@ -476,3 +515,9 @@ class HVC:
     def set_config(self):
         # TODO: Ask some of this information when hvc is first used
         pass
+
+    # Check that a user given hash is a valid hash
+    def hash_check(self, hash):
+        pattern = "^[a-z0-9]{40}$"
+        print(bool(re.search(pattern, hash)))
+        return False
