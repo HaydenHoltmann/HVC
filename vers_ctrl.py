@@ -437,33 +437,38 @@ class HVC:
             print(br)
 
     # Creates a new branch
-    # TODO: Don't overwrite and existing branch
     def branch_new(self, name, commit=""):
-        new_branch = open(f"{self.repository_directory}/refs/heads/{name}", "w")
+        branch_path = f"{self.repository_directory}/refs/heads/{name}"
 
-        if commit == "":
-            current_branch = open(f"{self.repository_directory}/{self.head}", "r")
-            current_commit = current_branch.read()
-
-            new_branch.write(current_commit)
-            current_branch.close()
+        # Only a commit will be able to change the commit object this branch points to
+        if os.path.exists(branch_path):
+            print(f'A branch called "{name}" already exists.')
         else:
-            hash_list = []
-            hash_folders = os.listdir(self.objects_directory)
+            new_branch = open(branch_path, "w")
 
-            # Find full hashes using the object folders
-            for hf in hash_folders:
-                hash_list.append(
-                    f"{hf}{os.listdir(f'{self.objects_directory}/{hf}')[0]}"
-                )
+            if commit == "":
+                current_branch = open(f"{self.repository_directory}/{self.head}", "r")
+                current_commit = current_branch.read()
 
-            # Compare against objects
-            if commit in hash_list and self.cat(commit, "-t") == "commit":
-                new_branch.write(commit)
+                new_branch.write(current_commit)
+                current_branch.close()
             else:
-                print(f"{commit} is not a commit object in this repository")
+                hash_list = []
+                hash_folders = os.listdir(self.objects_directory)
 
-        new_branch.close()
+                # Find full hashes using the object folders
+                for hf in hash_folders:
+                    hash_list.append(
+                        f"{hf}{os.listdir(f'{self.objects_directory}/{hf}')[0]}"
+                    )
+
+                # Compare against objects
+                if commit in hash_list and self.cat(commit, "-t") == "commit":
+                    new_branch.write(commit)
+                else:
+                    print(f"{commit} is not a commit object in this repository")
+
+            new_branch.close()
 
     # Switches between branches
     def switch(self):
