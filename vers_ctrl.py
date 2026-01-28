@@ -471,9 +471,18 @@ class HVC:
             new_branch.close()
 
     # Switches between branches
-    def switch(self):
-        # TODO: Change value of self.head to point to the current branch
-        # TODO: Create HEAD log
+    def switch(self, name):
+        # Don't switch if already on branch "name"
+        if name == os.path.basename(self.head):
+            print(f'Already on "{name}" branch')
+            return
+
+        # TODO: Change value of self.head to point to the current branch -------
+        print(self.head)
+
+        # TODO: Update HEAD log -------
+
+        # TODO: Replace files of old branch with new branch files (be careful not to delete everything...again:) )
         pass
 
     def merge(self):
