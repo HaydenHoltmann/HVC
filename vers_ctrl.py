@@ -483,19 +483,23 @@ class HVC:
         branches = os.listdir(branch_path)
 
         if name in branches:
-            print(f"{name} is a branch")
-
-            # TODO: Point HEAD to new branch
+            # Point HEAD to new branch
             head = open(f"{self.repository_directory}/HEAD", "r")
             head_content = head.read()
             head.close()
 
-            print(f"Head content: {os.path.dirname(head_content)}")
+            # Writes new branch to point to
+            new_head = open(f"{self.repository_directory}/HEAD", "w")
+            new_head.write(f"{os.path.dirname(head_content)}/{name}")
+            new_head.close()
 
             # Change value of self.head to point to the current branch -------
-            # self.head = f"{os.path.dirname(self.head)}/{name}"
+            self.head = self.get_head()
 
-        print(self.head)
+            print(f'Switched to branch "{name}"')
+        else:
+            print(f'"{name}" is not a branch in this repository.')
+        print(f"Head: {self.head}")
 
         # TODO: Update HEAD log -------
 
