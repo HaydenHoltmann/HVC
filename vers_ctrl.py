@@ -477,6 +477,13 @@ class HVC:
             print(f'Already on "{name}" branch')
             return
 
+        # TODO: Make sure that name is an actual branch
+        branches = os.listdir(
+            f"{self.repository_directory}/{os.path.dirname(self.head)}"
+        )
+
+        if name in branches:
+            print(f"{name} is a branch")
         # TODO: Change value of self.head to point to the current branch -------
         print(self.head)
 
