@@ -488,6 +488,12 @@ class HVC:
             head_content = head.read()
             head.close()
 
+            # Getting the hash of the commit of the old branch
+            old_branch = open(f"{self.repository_directory}/{self.head}", "r")
+            old_branch_hash = old_branch.read()
+            old_branch.close()
+            old_branch_name = os.path.basename(self.head)
+
             # Writes new branch to point to
             new_head = open(f"{self.repository_directory}/HEAD", "w")
             new_head.write(f"{os.path.dirname(head_content)}/{name}")
@@ -496,15 +502,31 @@ class HVC:
             # Change value of self.head to point to the current branch -------
             self.head = self.get_head()
 
+            new_branch = open(f"{self.repository_directory}/{self.head}", "r")
+            new_branch_hash = new_branch.read()
+            new_branch.close()
+
             print(f'Switched to branch "{name}"')
+
+            # Update HEAD log -------
+            head_log = open(f"{self.repository_directory}/logs/HEAD", "a")
+
+            commit_time = datetime.datetime.now()
+            commit_stamp = int(commit_time.timestamp())
+
+            print(f"Old: {old_branch_hash}")
+            print(f"New: {new_branch_hash}")
+
+            log_content = f"{old_branch_hash} {new_branch_hash} {self.variables['author']} {commit_stamp} switch: moving from {old_branch_name} to {name}\n"
+
+            head_log.write(log_content)
+
+            head_log.close()
+
+            # TODO: Replace files of old branch with new branch files (be careful not to delete everything...again:) )
+
         else:
             print(f'"{name}" is not a branch in this repository.')
-        print(f"Head: {self.head}")
-
-        # TODO: Update HEAD log -------
-
-        # TODO: Replace files of old branch with new branch files (be careful not to delete everything...again:) )
-        pass
 
     def merge(self):
         # TODO: Create a ORIG_HEAD file that contains the hash of the previous commit, before doing a potentially dangerous operation(like merging branches)
