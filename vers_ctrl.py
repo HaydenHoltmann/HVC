@@ -477,14 +477,24 @@ class HVC:
             print(f'Already on "{name}" branch')
             return
 
-        # TODO: Make sure that name is an actual branch
-        branches = os.listdir(
-            f"{self.repository_directory}/{os.path.dirname(self.head)}"
-        )
+        # Make sure that name is an actual branch
+        branch_path = f"{self.repository_directory}/{os.path.dirname(self.head)}"
+        print(self.head)
+        branches = os.listdir(branch_path)
 
         if name in branches:
             print(f"{name} is a branch")
-        # TODO: Change value of self.head to point to the current branch -------
+
+            # TODO: Point HEAD to new branch
+            head = open(f"{self.repository_directory}/HEAD", "r")
+            head_content = head.read()
+            head.close()
+
+            print(f"Head content: {os.path.dirname(head_content)}")
+
+            # Change value of self.head to point to the current branch -------
+            # self.head = f"{os.path.dirname(self.head)}/{name}"
+
         print(self.head)
 
         # TODO: Update HEAD log -------
@@ -527,7 +537,7 @@ class HVC:
 
     def get_head(self):
         head = open(f"{self.repository_directory}/HEAD", "r")
-        head_output = head.read().replace("refs: ", "")
+        head_output = head.read().replace("ref: ", "")
         head_output = head_output.replace("\n", "")
 
         return head_output
