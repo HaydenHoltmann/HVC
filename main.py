@@ -7,25 +7,36 @@ print(f"{sys.argv}")
 
 statement = sys.argv[1]
 
-# TODO: Check input is correct before putting into the switch statement
+# Check input is correct before putting into the switch statement
+acceptable_statements = [
+    "init",
+    "add",
+    "commit",
+    "cat",
+    "status",
+    "branch",
+    "switch",
+    "merge",
+]
 # TODO: Add a switch statement for input
-match statement:
-    case "init":
-        pass
-    case "add":
-        print("add was called")
-    case "commit":
-        print("commit was called")
-    case "cat":
-        pass
-    case "status":
-        pass
-    case "branch":
-        pass
-    case "switch":
-        pass
-    case "merge":
-        pass
+if statement in acceptable_statements:
+    match statement:
+        case "init":
+            pass
+        case "add":
+            print("add was called")
+        case "commit":
+            print("commit was called")
+        case "cat":
+            pass
+        case "status":
+            pass
+        case "branch":
+            pass
+        case "switch":
+            pass
+        case "merge":
+            pass
 
 
 # ------------------------------Test Code to be delete ----------------------------
