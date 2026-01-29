@@ -573,6 +573,24 @@ class HVC:
                             entry_content = self.cat(entry_dictionary["hash"], "-p")
                             overwrite_file = open(f"{self.cwd}/{path}", "w")
 
+                            overwrite_file.write(str(entry_content))
+
+                            overwrite_file.close()
+
+                            # Check hash after overwrite
+                            new_file = open(f"{self.cwd}/{path}", "r")
+                            new_file_content = new_file.read()
+                            hash_after_overwrite = self.hash_object(
+                                "blob", new_file_content, "-n"
+                            )
+                            new_file.close()
+
+                            if (
+                                hash_after_overwrite != hash_before_overwrite
+                                and hash_after_overwrite == entry_dictionary["hash"]
+                            ):
+                                print("Switch was successful")
+
                 elif entry_dictionary["type"] == "tree":
                     self.replace_repository(entry_dictionary["hash"])
 
