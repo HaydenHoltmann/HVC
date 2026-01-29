@@ -553,7 +553,9 @@ class HVC:
                 entry_dictionary["file"] = entry_split[3]
 
                 if entry_dictionary["type"] == "blob":
-                    print(f"{entry_dictionary['file']} is a blob")
+                    print(
+                        f"{entry_dictionary['file']} is a blob {entry_dictionary['hash']}"
+                    )
                 elif entry_dictionary["type"] == "tree":
                     self.replace_repository(entry_dictionary["hash"])
 
