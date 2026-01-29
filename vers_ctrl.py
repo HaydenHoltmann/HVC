@@ -535,7 +535,26 @@ class HVC:
             print(f'"{name}" is not a branch in this repository.')
 
     def replace_repository(self, tree):
-        pass
+        # TODO: Safety feature to not mess up entire repository when switching between branches (Not really needed because each object contains it's content)
+        # TODO: Find the contents of the tree
+        tree_entries = str(self.cat(tree, "-p")).split("\n")
+
+        for entry in tree_entries:
+            entry_split = entry.split(" ")
+
+            # Prevents empty entry from being processed. This is fine because the entry format is standard and doesn't change
+            if len(entry_split) == 4:
+                entry_dictionary = {}
+
+                entry_dictionary["code"] = entry_split[0]
+                entry_dictionary["type"] = entry_split[1]
+                entry_dictionary["hash"] = entry_split[2]
+                entry_dictionary["file"] = entry_split[3]
+
+                print(entry_dictionary)
+
+        # TODO: Overwrite tree versions of the files in the directory
+        # TODO: Recursively do the above for any subtrees in the main tree
 
     def merge(self):
         # TODO: Create a ORIG_HEAD file that contains the hash of the previous commit, before doing a potentially dangerous operation(like merging branches)
