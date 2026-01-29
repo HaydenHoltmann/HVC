@@ -556,6 +556,23 @@ class HVC:
                     print(
                         f"{entry_dictionary['file']} is a blob {entry_dictionary['hash']}"
                     )
+                    # This overwrites files to the version in the current branch
+                    for path in self.directory_files:
+                        # Gives the full path for each file
+                        if entry_dictionary["file"] in path:
+                            # TODO: Check if overwrite was successful(get hash of file before change and compare it to hash of file after change, also compare hash to that contained in tree)
+                            # To get hash before overwrite
+                            old_file = open(f"{self.cwd}/{path}", "r")
+                            old_file_content = old_file.read()
+                            hash_before_overwrite = self.hash_object(
+                                "blob", old_file_content, "-n"
+                            )
+                            old_file.close()
+
+                            # To overwrite file
+                            entry_content = self.cat(entry_dictionary["hash"], "-p")
+                            overwrite_file = open(f"{self.cwd}/{path}", "w")
+
                 elif entry_dictionary["type"] == "tree":
                     self.replace_repository(entry_dictionary["hash"])
 
