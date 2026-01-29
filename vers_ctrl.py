@@ -139,6 +139,7 @@ class HVC:
         self.hash_object("index", content)
 
     def process_ignore(self):
+        # Git tracks gitignore
         ignore_file = open(".hvc_ignore")
         ignore_output = []
 
@@ -551,7 +552,10 @@ class HVC:
                 entry_dictionary["hash"] = entry_split[2]
                 entry_dictionary["file"] = entry_split[3]
 
-                print(entry_dictionary)
+                if entry_dictionary["type"] == "blob":
+                    print(f"{entry_dictionary['file']} is a blob")
+                elif entry_dictionary["type"] == "tree":
+                    self.replace_repository(entry_dictionary["hash"])
 
         # TODO: Overwrite tree versions of the files in the directory
         # TODO: Recursively do the above for any subtrees in the main tree
