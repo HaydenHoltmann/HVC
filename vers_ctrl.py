@@ -477,9 +477,10 @@ class HVC:
             print(f'Already on "{name}" branch')
             return
 
+        # TODO: Can't switch if there is uncommited files
+
         # Make sure that name is an actual branch
         branch_path = f"{self.repository_directory}/{os.path.dirname(self.head)}"
-        print(self.head)
         branches = os.listdir(branch_path)
 
         if name in branches:
@@ -514,19 +515,27 @@ class HVC:
             commit_time = datetime.datetime.now()
             commit_stamp = int(commit_time.timestamp())
 
-            print(f"Old: {old_branch_hash}")
-            print(f"New: {new_branch_hash}")
-
             log_content = f"{old_branch_hash} {new_branch_hash} {self.variables['author']} {commit_stamp} switch: moving from {old_branch_name} to {name}\n"
 
             head_log.write(log_content)
 
             head_log.close()
 
-            # TODO: Replace files of old branch with new branch files (be careful not to delete everything...again:) )
+            # TODO: Replace files of old branch with new branch files (be careful not to delete everything...again:) ) -------
+            # Extract tree from commit object
+            # We want the content of the new branch, because we are swapping content to the new branch
+            commit_content = str(self.cat(new_branch_hash, "-p")).split("\n")
+
+            for entry in commit_content:
+                if "tree" in entry:
+                    tree = entry.replace("tree ", "")
+                    self.replace_repository(tree)
 
         else:
             print(f'"{name}" is not a branch in this repository.')
+
+    def replace_repository(self, tree):
+        pass
 
     def merge(self):
         # TODO: Create a ORIG_HEAD file that contains the hash of the previous commit, before doing a potentially dangerous operation(like merging branches)
