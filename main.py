@@ -1,9 +1,36 @@
 import vers_ctrl
+import sys
 
 h1 = vers_ctrl.HVC()
 
-# h1.hash_object("blob", "what is up, doc?")
+print(f"{sys.argv}")
 
+statement = sys.argv[1]
+
+# TODO: Check input is correct before putting into the switch statement
+# TODO: Add a switch statement for input
+match statement:
+    case "init":
+        pass
+    case "add":
+        print("add was called")
+    case "commit":
+        print("commit was called")
+    case "cat":
+        pass
+    case "status":
+        pass
+    case "branch":
+        pass
+    case "switch":
+        pass
+    case "merge":
+        pass
+
+
+# ------------------------------Test Code to be delete ----------------------------
+
+# h1.hash_object("blob", "what is up, doc?")
 # h1.add(".")
 # h1.add(["main.py", "vers_ctrl.py", "fake_file.py", "test_file.txt"])
 # h1.hash_object("blob", "Some other blob")
@@ -27,3 +54,5 @@ h1 = vers_ctrl.HVC()
 # h1.switch("master")
 # print(h1.cat("d2bd604ddc6f6b40ad41e4a9f039b2a002e6e470", "-p"))
 # h1.replace_repository("289750daaece6e40d988fc4e31f8dab9eb564abb")
+
+# ------------------------------Test Code to be delete ----------------------------
