@@ -1,11 +1,21 @@
 import vers_ctrl
 import sys
+import re
 
 h1 = vers_ctrl.HVC()
 
 print(f"{sys.argv}")
 
+# TODO: Make sure arguments in the right order. Statement first followed by arguments for the statments. Shouldn't be allowed to run the other way(Throw error)
+# Most likely the first argument after the script name can't start with "-".(First argument after the name needs to be an acceptable statement)
 statement = sys.argv[1]
+flags = []
+
+for item in sys.argv:
+    if re.match("-[a-z]", item):
+        flags.append(item)
+
+print(flags)
 
 # Check input is correct before putting into the switch statement
 acceptable_statements = [
@@ -18,6 +28,7 @@ acceptable_statements = [
     "switch",
     "merge",
 ]
+
 # TODO: Add a switch statement for input
 if statement in acceptable_statements:
     match statement:
@@ -37,6 +48,8 @@ if statement in acceptable_statements:
             pass
         case "merge":
             pass
+else:
+    print(f"{statement} is not a hvc statement")
 
 
 # ------------------------------Test Code to be delete ----------------------------

@@ -32,6 +32,7 @@ class HVC:
         else:
             print("Directory already exists.")
 
+    # TODO: Only accept "-c" and "-n" as flags, throw error if it's something else
     def hash_object(self, obj_type, content, flag="-c"):
         header = f"{obj_type} {len(content.encode('utf-8'))}\0"
 
@@ -159,6 +160,7 @@ class HVC:
         return ignore_output
 
     # Returns the content of a compressed object file(including index)
+    # TODO: Only allow known flags
     def cat(self, hash, flag):
         # File on object type
         if hash == "index":
@@ -470,6 +472,9 @@ class HVC:
                     print(f"{commit} is not a commit object in this repository")
 
             new_branch.close()
+
+    def branch_delete(self):
+        pass
 
     # Switches between branches
     def switch(self, name):
