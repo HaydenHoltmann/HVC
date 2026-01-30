@@ -4,18 +4,40 @@ import re
 
 h1 = vers_ctrl.HVC()
 
-print(f"{sys.argv}")
+print(f"argv: {sys.argv}")
 
 # TODO: Make sure arguments in the right order. Statement first followed by arguments for the statments. Shouldn't be allowed to run the other way(Throw error)
 # Most likely the first argument after the script name can't start with "-".(First argument after the name needs to be an acceptable statement)
+# Add arguments to a list without the first one(which is the name)
 statement = sys.argv[1]
-flags = []
+arguments = []
 
-for item in sys.argv:
+for i in range(2, len(sys.argv)):
+    arguments.append(sys.argv[i])
+
+flags = []
+modes = []
+
+# Remove the already used arguments(don't need the full list at the moment)
+# List flags
+for item in arguments:
     if re.match("-[a-z]", item):
         flags.append(item)
 
+
+print(f"Arguments before: {arguments}")
 print(flags)
+# List modes
+for item in arguments:
+    print(f"Item: {item}")
+    if re.match("--[a-z]+", item):
+        modes.append(item)
+
+# TODO: Add support for additionals, example a message, a hash, etc
+additionals = [x for x in arguments if x not in flags and x not in modes]
+
+print(f"Additionals: {additionals}")
+
 
 # Check input is correct before putting into the switch statement
 acceptable_statements = [
