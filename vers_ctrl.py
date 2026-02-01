@@ -473,10 +473,16 @@ class HVC:
                     print(f"{commit} is not a commit object in this repository")
 
             new_branch.close()
+            # TODO: Create branch log in the logs, with first entry being the branch it was created from
 
     def branch_delete(self, name):
-        # TODO: Can't delete the branch you are currently on
-        pass
+        # Can't delete the branch you are currently on
+        if name == os.path.basename(self.head):
+            print("Can't delete a branch that you are on, switch first.")
+
+        # TODO: Check that branch exists
+
+        # TODO: Delete stuff goes here. (Commit before and make sure you aren't on master)
 
     # Switches between branches
     def switch(self, name):
