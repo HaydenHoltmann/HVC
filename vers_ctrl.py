@@ -480,7 +480,14 @@ class HVC:
         if name == os.path.basename(self.head):
             print("Can't delete a branch that you are on, switch first.")
 
-        # TODO: Check that branch exists
+        # Check that branch exists
+        branches = os.listdir(
+            f"{self.repository_directory}/{os.path.dirname(self.head)}"
+        )
+
+        if name not in branches:
+            print(f"{name} is not a branch in this repository")
+            return
 
         # TODO: Delete stuff goes here. (Commit before and make sure you aren't on master)
 
