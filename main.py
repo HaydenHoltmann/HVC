@@ -1,78 +1,161 @@
 import vers_ctrl
 import sys
 import re
+import argparse
 
 h1 = vers_ctrl.HVC()
+#    "init",
+#    "add",
+#    "commit",
+#    "cat",
+#    "status",
+#    "branch",
+#    "switch",
+#    "merge",
 
-print(f"argv: {sys.argv}")
+
+# -----------------------------------------------------------argparse (start)---------------------------------------------------------------------------------------
+# TODO: argparse functions support additional information, so fill those if necessary after everything works
+
+# Main parser
+parser = argparse.ArgumentParser("hvc")
+
+
+# Subparsers
+subparsers = parser.add_subparsers(dest="command")
+
+# init command
+init = subparsers.add_parser("init")
+# add command
+add = subparsers.add_parser("add")
+
+add.add_argument("files", action="store", nargs="+")
+# commit command
+commit = subparsers.add_parser("commit")
+# cat command
+cat = subparsers.add_parser("cat")
+
+cat_group = cat.add_argument_group()
+
+# Only allows one of the following arguments to be used
+cat_exclusive = cat_group.add_mutually_exclusive_group(required=True)
+cat_exclusive.add_argument("-t", action="store_true")
+cat_exclusive.add_argument("-p", action="store_true")
+cat_exclusive.add_argument("-s", action="store_true")
+
+cat_group.add_argument("hash")
+
+# status command
+# branch command
+branch = subparsers.add_parser("branch")
+
+branch.add_argument("branch_name", nargs="?")
+branch.add_argument("hash", nargs="?")
+branch.add_argument("-d", action="store_true", help="Deletes a branch")
+# switch command
+switch = subparsers.add_parser("switch")
+
+switch.add_argument("branch_name")
+# merge command
+merge = subparsers.add_parser("merge")
+
+# Getting command line arguments
+args = parser.parse_args()
+
+print(args)
+
+match args.command:
+    case "init":
+        pass
+    case "add":
+        print("add was called")
+    case "commit":
+        print("commit was called")
+    case "cat":
+        pass
+    case "status":
+        pass
+    case "branch":
+        pass
+    case "switch":
+        pass
+    case "merge":
+        pass
+
+# -----------------------------------------------------------argparse (start)---------------------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------Using sys.argv (start)---------------------------------------------------------------------------------------------
 
 # TODO: Make sure arguments in the right order. Statement first followed by arguments for the statments. Shouldn't be allowed to run the other way(Throw error)
 # Most likely the first argument after the script name can't start with "-".(First argument after the name needs to be an acceptable statement)
 # Add arguments to a list without the first one(which is the name)
-statement = sys.argv[1]
-arguments = []
-
-for i in range(2, len(sys.argv)):
-    arguments.append(sys.argv[i])
-
-flags = []
-modes = []
+# statement = sys.argv[1]
+# arguments = []
+#
+# for i in range(2, len(sys.argv)):
+#    arguments.append(sys.argv[i])
+#
+# flags = []
+# modes = []
 
 # Remove the already used arguments(don't need the full list at the moment)
 # List flags
-for item in arguments:
-    if re.match("-[a-z]", item):
-        flags.append(item)
-
-
-print(f"Arguments before: {arguments}")
-print(flags)
+# for item in arguments:
+#    if re.match("-[a-z]", item):
+#        flags.append(item)
+#
+#
+# print(f"Arguments before: {arguments}")
+# print(flags)
 # List modes
-for item in arguments:
-    print(f"Item: {item}")
-    if re.match("--[a-z]+", item):
-        modes.append(item)
+# for item in arguments:
+#    print(f"Item: {item}")
+#    if re.match("--[a-z]+", item):
+#        modes.append(item)
+#
+## TODO: Add support for additionals, example a message, a hash, etc
+# additionals = [x for x in arguments if x not in flags and x not in modes]
+#
+# print(f"Additionals: {additionals}")
+#
+#
+## Check input is correct before putting into the switch statement
+# acceptable_statements = [
+#    "init",
+#    "add",
+#    "commit",
+#    "cat",
+#    "status",
+#    "branch",
+#    "switch",
+#    "merge",
+# ]
+#
+## TODO: Add a switch statement for input
+# if statement in acceptable_statements:
+#    match statement:
+#        case "init":
+#            pass
+#        case "add":
+#            print("add was called")
+#        case "commit":
+#            print("commit was called")
+#        case "cat":
+#            pass
+#        case "status":
+#            pass
+#        case "branch":
+#            pass
+#        case "switch":
+#            pass
+#        case "merge":
+#            pass
+# else:
+#    print(f"{statement} is not a hvc statement")
 
-# TODO: Add support for additionals, example a message, a hash, etc
-additionals = [x for x in arguments if x not in flags and x not in modes]
 
-print(f"Additionals: {additionals}")
-
-
-# Check input is correct before putting into the switch statement
-acceptable_statements = [
-    "init",
-    "add",
-    "commit",
-    "cat",
-    "status",
-    "branch",
-    "switch",
-    "merge",
-]
-
-# TODO: Add a switch statement for input
-if statement in acceptable_statements:
-    match statement:
-        case "init":
-            pass
-        case "add":
-            print("add was called")
-        case "commit":
-            print("commit was called")
-        case "cat":
-            pass
-        case "status":
-            pass
-        case "branch":
-            pass
-        case "switch":
-            pass
-        case "merge":
-            pass
-else:
-    print(f"{statement} is not a hvc statement")
-
+# -----------------------------------------------------------Using sys.argv (end)---------------------------------------------------------------------------------------------
 
 # ------------------------------Test Code to be delete ----------------------------
 

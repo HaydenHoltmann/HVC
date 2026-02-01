@@ -219,6 +219,7 @@ class HVC:
     # Creates commit objects. Every time a commit object is created, it will be different because the parent object in the file will be different and also the time
     def commit(self, message):
         # TODO: Can't commit if untracked changes
+        # TODO: Can't commit if status detects no changes
         # TODO: Make sure you add commits to whatever branch HEAD is pointing to
 
         # Creates tree object for each directory -------
@@ -542,7 +543,8 @@ class HVC:
 
     def replace_repository(self, tree):
         # TODO: Safety feature to not mess up entire repository when switching between branches (Not really needed because each object contains it's content)
-        # TODO: Find the contents of the tree
+        # TODO: If a file exists in the old repository but not in the new one, you need to delete it. Makes sure that when you switch back to the old repository that you create the file
+        # Find the contents of the tree
         tree_entries = str(self.cat(tree, "-p")).split("\n")
 
         for entry in tree_entries:
