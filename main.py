@@ -72,11 +72,25 @@ match args.command:
     case "commit":
         print("commit was called")
     case "cat":
-        pass
+        if args.t:
+            h1.cat(args.hash, "-t")
+        elif args.p:
+            h1.cat(args.hash, "-p")
+        elif args.s:
+            h1.cat(args.hash, "-s")
     case "status":
         pass
     case "branch":
-        pass
+        if args.branch_name is None and args.hash is None:
+            h1.branch()
+        elif args.branch_name is not None:
+            if args.d is True:
+                h1.branch_delete(args.branch_name)
+            else:
+                if args.hash is None:
+                    h1.branch_new(args.branch_name)
+                else:
+                    h1.branch_new(args.branch_name, args.hash)
     case "switch":
         pass
     case "merge":

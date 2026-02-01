@@ -474,7 +474,8 @@ class HVC:
 
             new_branch.close()
 
-    def branch_delete(self):
+    def branch_delete(self, name):
+        # TODO: Can't delete the branch you are currently on
         pass
 
     # Switches between branches
