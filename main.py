@@ -197,6 +197,6 @@ match args.command:
 # h1.switch("master")
 # print(h1.cat("d2bd604ddc6f6b40ad41e4a9f039b2a002e6e470", "-p"))
 # h1.replace_repository("289750daaece6e40d988fc4e31f8dab9eb564abb")
-h1.branch_delete("test_branch")
+# h1.branch_delete("test_branch")
 
 # ------------------------------Test Code to be delete ----------------------------

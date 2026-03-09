@@ -489,7 +489,15 @@ class HVC:
             print(f"{name} is not a branch in this repository")
             return
 
-        # TODO: Delete stuff goes here. (Commit before and make sure you aren't on master)
+        # Delete stuff here. (Commit before and make sure you aren't on master) -------
+
+        # Remove file from refs/heads
+        os.remove(f"{self.repository_directory}/{os.path.dirname(self.head)}/{name}")
+
+        # Remove file froms logs/refs/heads
+        os.remove(
+            f"{self.repository_directory}/logs/{os.path.dirname(self.head)}/{name}"
+        )
 
     # Switches between branches
     def switch(self, name):
