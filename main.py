@@ -32,6 +32,8 @@ add = subparsers.add_parser("add")
 add.add_argument("files", action="store", nargs="+")
 # commit command
 commit = subparsers.add_parser("commit")
+
+commit.add_argument("message")
 # cat command
 cat = subparsers.add_parser("cat")
 
@@ -70,7 +72,7 @@ match args.command:
     case "add":
         h1.add(args.files)
     case "commit":
-        print("commit was called")
+        h1.commit(args.message)
     case "cat":
         if args.t:
             h1.cat(args.hash, "-t")
