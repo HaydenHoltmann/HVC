@@ -473,7 +473,34 @@ class HVC:
                     print(f"{commit} is not a commit object in this repository")
 
             new_branch.close()
-            # TODO: Create branch log in the logs, with first entry being the branch it was created from
+            # Create branch log in the logs, with first entry being the branch it was created from
+            first_hash = "0000000000000000000000000000000000000000"
+
+            if commit == "":
+                current_branch_name = os.path.basename(self.head)
+
+                current_branch = open(f"{self.repository_directory}/{self.head}", "r")
+
+                current_hash = current_branch.read()
+
+                current_branch.close()
+            else:
+                current_branch_name = commit
+                current_hash = commit
+
+            branch_log = open(
+                f"{self.repository_directory}/logs/{os.path.dirname(self.head)}/{name}",
+                "a",
+            )
+
+            commit_time = datetime.datetime.now()
+            commit_stamp = int(commit_time.timestamp())
+
+            log_content = f"{first_hash} {current_hash} {self.variables['author']} {commit_stamp} branch: Created from {current_branch_name}\n"
+
+            branch_log.write(log_content)
+
+            branch_log.close()
 
     def branch_delete(self, name):
         # Can't delete the branch you are currently on
