@@ -426,10 +426,18 @@ class HVC:
 
     # Tracks changes to files
     def status(self):
+        # TODO: Get hashes for files in the cwd
         branch_file = open(f"{self.repository_directory}/{self.head}", "r")
         last_commit_hash = branch_file.read()
+        branch_file.close()
 
-        # print(last_commit_hash)
+        branch_hashes = self.cat(last_commit_hash, "-p")
+        # TODO: Get the hashes from the last commit
+        # TODO: Compare hashes, any difference means changes otherwise output no change
+        # TODO: Get hashes from index
+        # TODO: Compare hashes to index hashes
+
+        print(branch_hashes)
 
     # Lists branches
     def branch(self):
