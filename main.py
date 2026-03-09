@@ -70,14 +70,14 @@ match args.command:
     case "init":
         pass
     case "add":
-        h1.add(args.files)
+        h1.add(".")
     case "commit":
         h1.commit(args.message)
     case "cat":
         if args.t:
             h1.cat(args.hash, "-t")
         elif args.p:
-            h1.cat(args.hash, "-p")
+            print(h1.cat(args.hash, "-p"))
         elif args.s:
             h1.cat(args.hash, "-s")
     case "status":
@@ -94,7 +94,7 @@ match args.command:
                 else:
                     h1.branch_new(args.branch_name, args.hash)
     case "switch":
-        pass
+        h1.switch(args.branch_name)
     case "merge":
         pass
 
