@@ -68,7 +68,7 @@ match args.command:
     case "init":
         pass
     case "add":
-        print("add was called")
+        h1.add(args.files)
     case "commit":
         print("commit was called")
     case "cat":

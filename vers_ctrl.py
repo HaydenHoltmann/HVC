@@ -84,6 +84,7 @@ class HVC:
 
             # Adds all files in the repository to the index
             self.update_index("\n".join(index_content))
+
         else:
             # Files that are actually part of the directory
             valid_files = []
@@ -135,6 +136,8 @@ class HVC:
 
             # Hashing valid files
             self.update_index("\n".join(valid_index_content))
+
+        print("files added")
 
     def update_index(self, content):
         self.hash_object("index", content)
