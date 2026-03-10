@@ -427,16 +427,15 @@ class HVC:
     # Tracks changes to files
     def status(self):
         # Get hashes for files in the cwd -------
-        cwd_hash_list = []
+        cwd_hash_list = {}
 
-        print(self.directory_files)
         for file in self.directory_files:
             if not os.path.isdir(f"{self.cwd}/{file}"):
                 open_file = open(f"{self.cwd}/{file}", "r")
                 file_content = open_file.read()
                 open_file.close()
 
-                cwd_hash_list.append(self.hash_object("blob", file_content, "-n"))
+                cwd_hash_list[self.hash_object("blob", file_content, "-n")] = file
 
         # Get the hashes from the last commit -------
         branch_file = open(f"{self.repository_directory}/{self.head}", "r")
@@ -448,7 +447,12 @@ class HVC:
 
         commit_hash_list = self.subtree_hashes(tree_hash)
 
-        # TODO: Compare hashes, any difference means changes otherwise output no change -------
+        # Compare hashes, any difference means changes otherwise output no change -------
+        last_commit_difference = {}
+        for file_hash in cwd_hash_list.keys():
+            if file_hash not in commit_hash_list:
+                last_commit_difference[file_hash] = cwd_hash_list[file_hash]
+
         # TODO: Get hashes from index
         # TODO: Compare hashes to index hashes
 
@@ -462,6 +466,7 @@ class HVC:
                 elements = entry.split(" ")
                 object_type = elements[1]
                 object_hash = elements[2]
+                object_name = elements[3]
 
                 if object_type == "blob":
                     subtree_list.append(object_hash)
