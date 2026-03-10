@@ -453,8 +453,17 @@ class HVC:
             if file_hash not in commit_hash_list:
                 last_commit_difference[file_hash] = cwd_hash_list[file_hash]
 
-        # TODO: Get hashes from index
-        # TODO: Compare hashes to index hashes
+        # Get hashes from index -------
+        index_object = f"{self.cat('index', '-p')}".split("\n")
+
+        index_dictionary = {}
+
+        for element in index_object:
+            element_split = element.split(" ")
+
+            index_dictionary[element_split[0]] = element_split[1]
+
+        # TODO: Compare hashes to index hashes -------
 
     def subtree_hashes(self, tree_hash):
         tree_content = f"{self.cat(tree_hash, '-p')}".split("\n")
