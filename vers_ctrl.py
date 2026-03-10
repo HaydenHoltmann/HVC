@@ -463,7 +463,14 @@ class HVC:
 
             index_dictionary[element_split[0]] = element_split[1]
 
-        # TODO: Compare hashes to index hashes -------
+        # Compare hashes to index hashes -------
+        index_difference = {}
+
+        for file_hash in last_commit_difference.keys():
+            if file_hash not in index_dictionary:
+                index_difference[file_hash] = last_commit_difference[file_hash]
+
+        # TODO: Output -------
 
     def subtree_hashes(self, tree_hash):
         tree_content = f"{self.cat(tree_hash, '-p')}".split("\n")
