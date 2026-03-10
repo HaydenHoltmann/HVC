@@ -426,29 +426,49 @@ class HVC:
 
     # Tracks changes to files
     def status(self):
-        # TODO: Get hashes for files in the cwd
-        # Get the hashes from the last commit
+        # Get hashes for files in the cwd -------
+        cwd_hash_list = []
+
+        print(self.directory_files)
+        for file in self.directory_files:
+            if not os.path.isdir(f"{self.cwd}/{file}"):
+                open_file = open(f"{self.cwd}/{file}", "r")
+                file_content = open_file.read()
+                open_file.close()
+
+                cwd_hash_list.append(self.hash_object("blob", file_content, "-n"))
+
+        # Get the hashes from the last commit -------
         branch_file = open(f"{self.repository_directory}/{self.head}", "r")
         last_commit_hash = branch_file.read()
         branch_file.close()
 
         last_commit_content = f"{self.cat(last_commit_hash, '-p')}".split("\n")
-
         tree_hash = last_commit_content[0].replace("tree ", "")
-        tree_object_content = f"{self.cat(tree_hash, '-p')}".split("\n")
 
-        commit_hash_list = []
+        commit_hash_list = self.subtree_hashes(tree_hash)
 
-        for entry in tree_object_content:
-            if entry != "":
-                elements = entry.split(" ")
-                commit_hash_list.append(elements[2])
-
-        # TODO: Compare hashes, any difference means changes otherwise output no change
+        # TODO: Compare hashes, any difference means changes otherwise output no change -------
         # TODO: Get hashes from index
         # TODO: Compare hashes to index hashes
 
-        print(commit_hash_list)
+    def subtree_hashes(self, tree_hash):
+        tree_content = f"{self.cat(tree_hash, '-p')}".split("\n")
+        subtree_list = []
+
+        # .hvc_ignore is supposed to be tracked
+        for entry in tree_content:
+            if not entry == "":
+                elements = entry.split(" ")
+                object_type = elements[1]
+                object_hash = elements[2]
+
+                if object_type == "blob":
+                    subtree_list.append(object_hash)
+                elif object_type == "tree":
+                    subtree_list += self.subtree_hashes(object_hash)
+
+        return subtree_list
 
     # Lists branches
     def branch(self):
