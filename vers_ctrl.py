@@ -448,7 +448,9 @@ class HVC:
         commit_hash_list = self.subtree_hashes(tree_hash)
 
         # Compare hashes, any difference means changes otherwise output no change -------
+        # This is a dictionary full of hashes that are different from the hashes in the commit object. This indicates changes, whether it's for a new file or existing file
         last_commit_difference = {}
+
         for file_hash in cwd_hash_list.keys():
             if file_hash not in commit_hash_list:
                 last_commit_difference[file_hash] = cwd_hash_list[file_hash]
@@ -464,13 +466,32 @@ class HVC:
             index_dictionary[element_split[0]] = element_split[1]
 
         # Compare hashes to index hashes -------
-        index_difference = {}
-
-        for file_hash in last_commit_difference.keys():
-            if file_hash not in index_dictionary:
-                index_difference[file_hash] = last_commit_difference[file_hash]
+        #        index_difference = {}
+        #
+        #        for file_hash in last_commit_difference.keys():
+        #            if file_hash not in index_dictionary:
+        #                index_difference[file_hash] = last_commit_difference[file_hash]
 
         # TODO: Output -------
+        # If empty\
+
+        # for hash in last_commit_difference.keys():
+        #     if hash not in index_dictionary.keys():
+        #         if last_commit_difference[hash] in index_dictionary.values():
+        #             print(f"Change: {last_commit_difference[hash]}")
+        #         else:
+        #             print(f"Not Tracked: {last_commit_difference[hash]}")
+        #     else:
+        #         print(f"Tracked: {last_commit_difference[hash]}")
+
+        for hash in index_dictionary.keys():
+            if hash not in last_commit_difference.keys():
+                if index_dictionary[hash] in last_commit_difference.values():
+                    print(f"Change: {index_dictionary[hash]}")
+                else:
+                    print(f"Not Tracked: {index_dictionary[hash]}")
+            else:
+                print(f"Tracked: {index_dictionary[hash]}")
 
     def subtree_hashes(self, tree_hash):
         tree_content = f"{self.cat(tree_hash, '-p')}".split("\n")
