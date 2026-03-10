@@ -474,6 +474,7 @@ class HVC:
 
         # TODO: Output -------
         # If empty\
+        # Test for status
 
         # for hash in last_commit_difference.keys():
         #     if hash not in index_dictionary.keys():
