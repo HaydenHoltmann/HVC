@@ -86,17 +86,17 @@ class HVC:
             self.update_index("\n".join(index_content))
 
         else:
-            # Files that are actually part of the directory
+            # Files in "files" that are actually part of the directory(not all the files in the directory)
             valid_files = []
             # The hash values of the valid files
             valid_index_hashes = []
 
             # Checks for valid file names
-            for i in range(len(files)):
-                if files[i] in self.directory_files:
-                    valid_files.append(files[i])
+            for single_file in files:
+                if single_file in self.directory_files:
+                    valid_files.append(single_file)
                 else:
-                    print(f"{files[i]} not a part of this repository")
+                    print(f"{single_file} not a part of this repository")
 
             # Creating the objects, not updating index file
             for i in valid_files:
@@ -126,15 +126,16 @@ class HVC:
                 # Dictionary
                 index_dictionary[current_file] = current_hash
 
+            # If in index already, update the hash. If not in, it will be created in index_dictionary
             for i in range(len(valid_files)):
-                if valid_files[i] in index_dictionary:
-                    index_dictionary[valid_files[i]] = valid_index_hashes[i]
+                index_dictionary[valid_files[i]] = valid_index_hashes[i]
 
-            # Add new values from dictionary valid_index_content
+            # Add values from dictionary to valid_index_content
             for name in index_dictionary:
                 valid_index_content.append(f"{index_dictionary[name]} {name}")
 
             # Hashing valid files
+            print(valid_index_content)
             self.update_index("\n".join(valid_index_content))
 
         print("files added")
