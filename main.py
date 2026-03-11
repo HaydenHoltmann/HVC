@@ -71,7 +71,7 @@ match args.command:
     case "init":
         pass
     case "add":
-        h1.add(".")
+        h1.add(args.files)
     case "commit":
         h1.commit(args.message)
     case "cat":
@@ -97,6 +97,8 @@ match args.command:
     case "switch":
         h1.switch(args.branch_name)
     case "merge":
+        pass
+    case "log":
         pass
 
 # -----------------------------------------------------------argparse (start)---------------------------------------------------------------------------------------

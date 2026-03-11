@@ -435,8 +435,9 @@ class HVC:
                 file_content = open_file.read()
                 open_file.close()
 
-                cwd_hash_list[self.hash_object("blob", file_content, "-n")] = file
+                cwd_hash_list[file] = self.hash_object("blob", file_content, "-n")
 
+        print(f"cwd_hash_list: {cwd_hash_list} \n")
         # Get the hashes from the last commit -------
         branch_file = open(f"{self.repository_directory}/{self.head}", "r")
         last_commit_hash = branch_file.read()
@@ -447,13 +448,9 @@ class HVC:
 
         commit_hash_list = self.subtree_hashes(tree_hash)
 
-        # Compare hashes, any difference means changes otherwise output no change -------
-        # This is a dictionary full of hashes that are different from the hashes in the commit object. This indicates changes, whether it's for a new file or existing file
-        last_commit_difference = {}
+        print(f"commit_hash_list: {commit_hash_list} \n")
 
-        for file_hash in cwd_hash_list.keys():
-            if file_hash not in commit_hash_list:
-                last_commit_difference[file_hash] = cwd_hash_list[file_hash]
+        # Compare hashes, any difference means changes otherwise output no change -------
 
         # Get hashes from index -------
         index_object = f"{self.cat('index', '-p')}".split("\n")
@@ -463,40 +460,49 @@ class HVC:
         for element in index_object:
             element_split = element.split(" ")
 
-            index_dictionary[element_split[0]] = element_split[1]
+            index_dictionary[element_split[1]] = element_split[0]
 
-        # Compare hashes to index hashes -------
-        #        index_difference = {}
-        #
-        #        for file_hash in last_commit_difference.keys():
-        #            if file_hash not in index_dictionary:
-        #                index_difference[file_hash] = last_commit_difference[file_hash]
+        print(f"index_dictionary: {index_dictionary} \n")
+
+        # Find "Not staged changes" and untracked files
+        not_staged_files = []
+        untracked_files = []
+        staged_files = []
+
+        # cwd VS index
+        for file_name in cwd_hash_list.keys():
+            if file_name in index_dictionary.keys():
+                if cwd_hash_list[file_name] not in index_dictionary.values():
+                    print(
+                        f"Changes not staged for: {file_name} old: {index_dictionary[file_name]} new: {cwd_hash_list[file_name]}"
+                    )
+
+                    not_staged_files.append(["modified", file_name])
+            else:
+                print(f"Untracked File: {file_name} hash: {cwd_hash_list[file_name]}")
+                untracked_files.append(file_name)
+
+            if len(index_dictionary) > len(cwd_hash_list):
+                for extra_file in index_dictionary.keys():
+                    if extra_file not in cwd_hash_list.keys():
+                        not_staged_files.append(["deleted", file_name])
+
+        # Find "Changes to commit files"
+        # index VS commit
+        for file_name in index_dictionary.keys():
+            if file_name in commit_hash_list.keys():
+                if index_dictionary[file_name] not in commit_hash_list.values():
+                    if file_name not in not_staged_files:
+                        staged_files.append(["modified", file_name])
 
         # TODO: Output -------
-        # If empty\
-        # Test for status
-
-        # for hash in last_commit_difference.keys():
-        #     if hash not in index_dictionary.keys():
-        #         if last_commit_difference[hash] in index_dictionary.values():
-        #             print(f"Change: {last_commit_difference[hash]}")
-        #         else:
-        #             print(f"Not Tracked: {last_commit_difference[hash]}")
-        #     else:
-        #         print(f"Tracked: {last_commit_difference[hash]}")
-
-        for hash in index_dictionary.keys():
-            if hash not in last_commit_difference.keys():
-                if index_dictionary[hash] in last_commit_difference.values():
-                    print(f"Change: {index_dictionary[hash]}")
-                else:
-                    print(f"Not Tracked: {index_dictionary[hash]}")
-            else:
-                print(f"Tracked: {index_dictionary[hash]}")
+        print(f"Staged for commit:\n{staged_files}\n")
+        print(f"Not staged for commit:\n{not_staged_files}\n")
+        print(f"Untracked:\n{untracked_files}\n")
 
     def subtree_hashes(self, tree_hash):
         tree_content = f"{self.cat(tree_hash, '-p')}".split("\n")
-        subtree_list = []
+        subtree_list = {}
 
         # .hvc_ignore is supposed to be tracked
         for entry in tree_content:
@@ -507,9 +513,9 @@ class HVC:
                 object_name = elements[3]
 
                 if object_type == "blob":
-                    subtree_list.append(object_hash)
+                    subtree_list[object_name] = object_hash
                 elif object_type == "tree":
-                    subtree_list += self.subtree_hashes(object_hash)
+                    subtree_list.update(self.subtree_hashes(object_hash))
 
         return subtree_list
 
