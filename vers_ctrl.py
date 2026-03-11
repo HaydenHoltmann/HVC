@@ -438,7 +438,6 @@ class HVC:
 
                 cwd_hash_list[file] = self.hash_object("blob", file_content, "-n")
 
-        print(f"cwd_hash_list: {cwd_hash_list} \n")
         # Get the hashes from the last commit -------
         branch_file = open(f"{self.repository_directory}/{self.head}", "r")
         last_commit_hash = branch_file.read()
@@ -447,9 +446,7 @@ class HVC:
         last_commit_content = f"{self.cat(last_commit_hash, '-p')}".split("\n")
         tree_hash = last_commit_content[0].replace("tree ", "")
 
-        commit_hash_list = self.subtree_hashes(tree_hash)
-
-        print(f"commit_hash_list: {commit_hash_list} \n")
+        commit_hash_dictionary = self.subtree_hashes(tree_hash)
 
         # Compare hashes, any difference means changes otherwise output no change -------
 
@@ -463,8 +460,6 @@ class HVC:
 
             index_dictionary[element_split[1]] = element_split[0]
 
-        print(f"index_dictionary: {index_dictionary} \n")
-
         # Find "Not staged changes" and untracked files
         not_staged_files = []
         untracked_files = []
@@ -474,27 +469,28 @@ class HVC:
         for file_name in cwd_hash_list.keys():
             if file_name in index_dictionary.keys():
                 if cwd_hash_list[file_name] not in index_dictionary.values():
-                    print(
-                        f"Changes not staged for: {file_name} old: {index_dictionary[file_name]} new: {cwd_hash_list[file_name]}"
-                    )
-
                     not_staged_files.append(["modified", file_name])
             else:
                 print(f"Untracked File: {file_name} hash: {cwd_hash_list[file_name]}")
                 untracked_files.append(file_name)
 
-            if len(index_dictionary) > len(cwd_hash_list):
-                for extra_file in index_dictionary.keys():
-                    if extra_file not in cwd_hash_list.keys():
-                        not_staged_files.append(["deleted", file_name])
+        if len(index_dictionary) > len(cwd_hash_list):
+            for extra_file in index_dictionary.keys():
+                if extra_file not in cwd_hash_list.keys():
+                    not_staged_files.append(["deleted", extra_file])
 
         # Find "Changes to commit files"
         # index VS commit
         for file_name in index_dictionary.keys():
-            if file_name in commit_hash_list.keys():
-                if index_dictionary[file_name] not in commit_hash_list.values():
+            if file_name in commit_hash_dictionary.keys():
+                if index_dictionary[file_name] not in commit_hash_dictionary.values():
                     if file_name not in not_staged_files:
                         staged_files.append(["modified", file_name])
+
+            if len(commit_hash_dictionary) > len(index_dictionary):
+                for extra_file in commit_hash_dictionary.keys():
+                    if extra_file not in commit_hash_dictionary.keys():
+                        staged_files.append(["deleted", file_name])
 
         # TODO: Output -------
         print(f"Staged for commit:\n{staged_files}\n")
