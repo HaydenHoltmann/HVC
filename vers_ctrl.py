@@ -212,7 +212,10 @@ class HVC:
         # Creates a list of paths that are in the ignore list
         for j in range(len(self.ignore_content)):
             for k in range(len(file_paths)):
-                if self.ignore_content[j] in file_paths[k]:
+                if (
+                    self.ignore_content[j] in file_paths[k]
+                    and file_paths[k] != ".hvc_ignore"
+                ):
                     ignore_paths.append(file_paths[k])
 
         # Removes the ignore paths from the list of all the file paths and puts it in it's final list
@@ -283,12 +286,20 @@ class HVC:
                     object_hash = self.hash_object(
                         obj_type, open(f"{paths}/{file}").read(), "-n"
                     )
+
+                    # Removes .txt from directory BUG
+                    if obj_type == "tree":
+                        clean_name = file.split(".")
+                        file = clean_name[0]
+
                     object_entry = [
                         self.object_types[obj_type],
                         obj_type,
                         object_hash,
                         file,
                     ]
+
+                    print(f"Object Entry in commit(): {object_entry}")
 
                     tree.write(" ".join(object_entry) + "\n")
 
@@ -439,10 +450,17 @@ class HVC:
                 cwd_hash_list[file] = self.hash_object("blob", file_content, "-n")
 
         # Get the hashes from the last commit -------
+        # TODO: Add file directories to file paths(from the tree objects)
+
+        # Commit object hash
         branch_file = open(f"{self.repository_directory}/{self.head}", "r")
         last_commit_hash = branch_file.read()
+        print(f"Last Commit: {last_commit_hash}")
+        print(f"Ignore List: {self.ignore_content}")
+        print(f"Directory Files: {self.directory_files}")
         branch_file.close()
 
+        # Commit object content
         last_commit_content = f"{self.cat(last_commit_hash, '-p')}".split("\n")
         tree_hash = last_commit_content[0].replace("tree ", "")
 
@@ -461,58 +479,67 @@ class HVC:
             index_dictionary[element_split[1]] = element_split[0]
 
         # Find "Not staged changes" and untracked files
-        not_staged_files = []
+        not_staged_files = {}
         untracked_files = []
-        staged_files = []
+        staged_files = {}
 
         # cwd VS index
         for file_name in cwd_hash_list.keys():
             if file_name in index_dictionary.keys():
                 if cwd_hash_list[file_name] not in index_dictionary.values():
-                    not_staged_files.append(["modified", file_name])
+                    not_staged_files[file_name] = "modified"
             else:
-                print(f"Untracked File: {file_name} hash: {cwd_hash_list[file_name]}")
                 untracked_files.append(file_name)
 
-        if len(index_dictionary) > len(cwd_hash_list):
-            for extra_file in index_dictionary.keys():
-                if extra_file not in cwd_hash_list.keys():
-                    not_staged_files.append(["deleted", extra_file])
+        for extra_file in index_dictionary.keys():
+            if extra_file not in cwd_hash_list.keys():
+                not_staged_files[extra_file] = "deleted"
 
         # Find "Changes to commit files"
         # index VS commit
         for file_name in index_dictionary.keys():
             if file_name in commit_hash_dictionary.keys():
                 if index_dictionary[file_name] not in commit_hash_dictionary.values():
-                    if file_name not in not_staged_files:
-                        staged_files.append(["modified", file_name])
+                    if file_name not in not_staged_files.keys():
+                        staged_files[file_name] = "modified"
 
-            if len(commit_hash_dictionary) > len(index_dictionary):
-                for extra_file in commit_hash_dictionary.keys():
-                    if extra_file not in commit_hash_dictionary.keys():
-                        staged_files.append(["deleted", file_name])
+        print(f"Commit hash dictionary: \n {commit_hash_dictionary} \n")
+        print(f"Index Dictionary: \n {index_dictionary} \n")
+        print(f"CWD: \n {cwd_hash_list} \n")
+
+        for extra_file in commit_hash_dictionary.keys():
+            if extra_file not in index_dictionary.keys():
+                staged_files[extra_file] = "deleted"
 
         # TODO: Output -------
         print(f"Staged for commit:\n{staged_files}\n")
         print(f"Not staged for commit:\n{not_staged_files}\n")
         print(f"Untracked:\n{untracked_files}\n")
 
-    def subtree_hashes(self, tree_hash):
+    def subtree_hashes(self, tree_hash, tree_name=""):
         tree_content = f"{self.cat(tree_hash, '-p')}".split("\n")
         subtree_list = {}
 
         # .hvc_ignore is supposed to be tracked
         for entry in tree_content:
             if not entry == "":
+                print(f"Entry: {entry}")
                 elements = entry.split(" ")
                 object_type = elements[1]
                 object_hash = elements[2]
                 object_name = elements[3]
 
+                # TODO: Make object_name the path from commit commit_hash_dictionary
+
                 if object_type == "blob":
-                    subtree_list[object_name] = object_hash
+                    if tree_name != "":
+                        subtree_list[f"{tree_name}/{object_name}"] = object_hash
+                    else:
+                        subtree_list[object_name] = object_hash
+
                 elif object_type == "tree":
-                    subtree_list.update(self.subtree_hashes(object_hash))
+                    print(f"Tree Name Object: {object_name} \n")
+                    subtree_list.update(self.subtree_hashes(object_hash, object_name))
 
         return subtree_list
 

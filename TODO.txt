@@ -1,5 +1,0 @@
-- status
-- merge
-- config
-- Processing input with argparse
-- Creating application with pyinstaller
