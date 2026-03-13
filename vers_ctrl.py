@@ -299,8 +299,6 @@ class HVC:
                         file,
                     ]
 
-                    print(f"Object Entry in commit(): {object_entry}")
-
                     tree.write(" ".join(object_entry) + "\n")
 
                 tree.close()
@@ -450,14 +448,10 @@ class HVC:
                 cwd_hash_list[file] = self.hash_object("blob", file_content, "-n")
 
         # Get the hashes from the last commit -------
-        # TODO: Add file directories to file paths(from the tree objects)
 
         # Commit object hash
         branch_file = open(f"{self.repository_directory}/{self.head}", "r")
         last_commit_hash = branch_file.read()
-        print(f"Last Commit: {last_commit_hash}")
-        print(f"Ignore List: {self.ignore_content}")
-        print(f"Directory Files: {self.directory_files}")
         branch_file.close()
 
         # Commit object content
@@ -502,19 +496,28 @@ class HVC:
                 if index_dictionary[file_name] not in commit_hash_dictionary.values():
                     if file_name not in not_staged_files.keys():
                         staged_files[file_name] = "modified"
-
-        print(f"Commit hash dictionary: \n {commit_hash_dictionary} \n")
-        print(f"Index Dictionary: \n {index_dictionary} \n")
-        print(f"CWD: \n {cwd_hash_list} \n")
+            else:
+                if file_name not in not_staged_files.keys():
+                    staged_files[file_name] = "new file"
 
         for extra_file in commit_hash_dictionary.keys():
             if extra_file not in index_dictionary.keys():
                 staged_files[extra_file] = "deleted"
 
-        # TODO: Output -------
-        print(f"Staged for commit:\n{staged_files}\n")
-        print(f"Not staged for commit:\n{not_staged_files}\n")
-        print(f"Untracked:\n{untracked_files}\n")
+        # Output -------
+        # Get branch
+        print(f"On branch {os.path.basename(self.head)}")
+
+        if (
+            bool(not_staged_files) is False
+            and bool(untracked_files) is False
+            and bool(staged_files) is False
+        ):
+            print("No changes to be commited")
+        else:
+            print(f"Staged for commit:\n{staged_files}\n")
+            print(f"Not staged for commit:\n{not_staged_files}\n")
+            print(f"Untracked:\n{untracked_files}\n")
 
     def subtree_hashes(self, tree_hash, tree_name=""):
         tree_content = f"{self.cat(tree_hash, '-p')}".split("\n")
@@ -523,13 +526,10 @@ class HVC:
         # .hvc_ignore is supposed to be tracked
         for entry in tree_content:
             if not entry == "":
-                print(f"Entry: {entry}")
                 elements = entry.split(" ")
                 object_type = elements[1]
                 object_hash = elements[2]
                 object_name = elements[3]
-
-                # TODO: Make object_name the path from commit commit_hash_dictionary
 
                 if object_type == "blob":
                     if tree_name != "":
@@ -538,8 +538,16 @@ class HVC:
                         subtree_list[object_name] = object_hash
 
                 elif object_type == "tree":
-                    print(f"Tree Name Object: {object_name} \n")
-                    subtree_list.update(self.subtree_hashes(object_hash, object_name))
+                    if tree_name != "":
+                        subtree_list.update(
+                            self.subtree_hashes(
+                                object_hash, f"{tree_name}/{object_name}"
+                            )
+                        )
+                    else:
+                        subtree_list.update(
+                            self.subtree_hashes(object_hash, object_name)
+                        )
 
         return subtree_list
 
