@@ -337,7 +337,8 @@ class HVC:
         parent_hash = "0000000000000000000000000000000000000000"
 
         if not os.path.exists(f"{self.repository_directory}/{self.head}"):
-            print("master doesn't exist")
+            # Means this is the first commit
+            commit_content.append(f"parent {parent_hash}")
         else:
             head_branch = open(f"{self.repository_directory}/{self.head}")
             parent_hash = head_branch.read()
@@ -788,17 +789,18 @@ class HVC:
         # After merge is done, a new commit object is created with the updated files
         pass
 
-    def log(self):
+    def log(self, flags=[]):
         # Get hash of last commit
         last_commit_file = open(f"{self.repository_directory}/{self.head}", "r")
         last_commit_hash = last_commit_file.read()
         last_commit_file.close()
 
-        log_output = self.get_commit_history(last_commit_hash)
+        self.output_commit_history(last_commit_hash, flags)
 
-    def get_commit_history(self, child_hash):
+    def output_commit_history(self, parent, flags):
+        output_log = []
         # Get content
-        child_commit_content = f"{self.cat(child_hash, '-p')}"
+        child_commit_content = f"{self.cat(parent, '-p')}"
 
         commit_content = child_commit_content.split("\n")
 
@@ -810,22 +812,25 @@ class HVC:
         parent_content = parent_entry.split(" ")
         parent_hash = parent_content[1]
 
-        # if parent_hash !=
-        # Want to test out this function however only the third commit object exists, can't access the first two and need the parent of the first commit to be 0000000000000000000000000000000000000000
-        # Therefore delete all the relevant things like objects, logs etc, to reset the whole repository and then add some changes, enough for testing
-
         author_content = author_entry.rsplit(" ", 1)
         author = author_content[0]
         unix_time = author_content[1]
 
         standard_time = time.asctime(time.gmtime(int(unix_time)))
 
-        # commit_log =
+        if not flags:
+            # empty
+            print(f"Parent: {parent}")
+            print(f"Author: {author}")
+            print(f"Date: {standard_time}")
+            print("\n")
+            print(message_entry)
+            print("\n")
+        if "--oneline" in flags:
+            print(f"{parent[:6]} {message_entry}")
 
-        print(parent_hash)
-        print(author)
-        print(standard_time)
-        print(message_entry)
+        if parent_hash != "0000000000000000000000000000000000000000":
+            self.output_commit_history(parent_hash, flags)
 
     def get_hashes(self):
         object_path = self.cwd + "/.hvc/objects"
