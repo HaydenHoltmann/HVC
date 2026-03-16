@@ -62,6 +62,12 @@ switch.add_argument("branch_name")
 # merge command
 merge = subparsers.add_parser("merge")
 
+# log command
+log = subparsers.add_parser("log")
+
+# might need to be a list
+log.add_argument("--oneline", action="store_true")
+
 # Getting command line arguments
 args = parser.parse_args()
 
@@ -99,7 +105,7 @@ match args.command:
     case "merge":
         pass
     case "log":
-        pass
+        h1.log()
 
 # -----------------------------------------------------------argparse (start)---------------------------------------------------------------------------------------
 

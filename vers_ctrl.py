@@ -228,6 +228,7 @@ class HVC:
         # TODO: Can't commit if untracked changes
         # TODO: Can't commit if status detects no changes
         # TODO: Make sure you add commits to whatever branch HEAD is pointing to
+        # TODO: Commit objects must have "author" and "committer" next to that info(they currently don't)
 
         # Creates tree object for each directory -------
         directories = []
@@ -450,74 +451,80 @@ class HVC:
         # Get the hashes from the last commit -------
 
         # Commit object hash
-        branch_file = open(f"{self.repository_directory}/{self.head}", "r")
-        last_commit_hash = branch_file.read()
-        branch_file.close()
+        if os.path.exists(f"{self.repository_directory}/{self.head}"):
+            branch_file = open(f"{self.repository_directory}/{self.head}", "r")
+            last_commit_hash = branch_file.read()
+            branch_file.close()
 
-        # Commit object content
-        last_commit_content = f"{self.cat(last_commit_hash, '-p')}".split("\n")
-        tree_hash = last_commit_content[0].replace("tree ", "")
+            # Commit object content
+            last_commit_content = f"{self.cat(last_commit_hash, '-p')}".split("\n")
+            tree_hash = last_commit_content[0].replace("tree ", "")
 
-        commit_hash_dictionary = self.subtree_hashes(tree_hash)
+            commit_hash_dictionary = self.subtree_hashes(tree_hash)
 
-        # Compare hashes, any difference means changes otherwise output no change -------
+            # Compare hashes, any difference means changes otherwise output no change -------
 
-        # Get hashes from index -------
-        index_object = f"{self.cat('index', '-p')}".split("\n")
+            # Get hashes from index -------
+            index_object = f"{self.cat('index', '-p')}".split("\n")
 
-        index_dictionary = {}
+            index_dictionary = {}
 
-        for element in index_object:
-            element_split = element.split(" ")
+            for element in index_object:
+                element_split = element.split(" ")
 
-            index_dictionary[element_split[1]] = element_split[0]
+                index_dictionary[element_split[1]] = element_split[0]
 
-        # Find "Not staged changes" and untracked files
-        not_staged_files = {}
-        untracked_files = []
-        staged_files = {}
+            # Find "Not staged changes" and untracked files
+            not_staged_files = {}
+            untracked_files = []
+            staged_files = {}
 
-        # cwd VS index
-        for file_name in cwd_hash_list.keys():
-            if file_name in index_dictionary.keys():
-                if cwd_hash_list[file_name] not in index_dictionary.values():
-                    not_staged_files[file_name] = "modified"
-            else:
-                untracked_files.append(file_name)
+            # cwd VS index
+            for file_name in cwd_hash_list.keys():
+                if file_name in index_dictionary.keys():
+                    if cwd_hash_list[file_name] not in index_dictionary.values():
+                        not_staged_files[file_name] = "modified"
+                else:
+                    untracked_files.append(file_name)
 
-        for extra_file in index_dictionary.keys():
-            if extra_file not in cwd_hash_list.keys():
-                not_staged_files[extra_file] = "deleted"
+            for extra_file in index_dictionary.keys():
+                if extra_file not in cwd_hash_list.keys():
+                    not_staged_files[extra_file] = "deleted"
 
-        # Find "Changes to commit files"
-        # index VS commit
-        for file_name in index_dictionary.keys():
-            if file_name in commit_hash_dictionary.keys():
-                if index_dictionary[file_name] not in commit_hash_dictionary.values():
+            # Find "Changes to commit files"
+            # index VS commit
+            for file_name in index_dictionary.keys():
+                if file_name in commit_hash_dictionary.keys():
+                    if (
+                        index_dictionary[file_name]
+                        not in commit_hash_dictionary.values()
+                    ):
+                        if file_name not in not_staged_files.keys():
+                            staged_files[file_name] = "modified"
+                else:
                     if file_name not in not_staged_files.keys():
-                        staged_files[file_name] = "modified"
+                        staged_files[file_name] = "new file"
+
+            for extra_file in commit_hash_dictionary.keys():
+                if extra_file not in index_dictionary.keys():
+                    staged_files[extra_file] = "deleted"
+
+            # Output -------
+            # Get branch
+            print(f"On branch {os.path.basename(self.head)}")
+
+            if (
+                bool(not_staged_files) is False
+                and bool(untracked_files) is False
+                and bool(staged_files) is False
+            ):
+                print("No changes to be committed")
             else:
-                if file_name not in not_staged_files.keys():
-                    staged_files[file_name] = "new file"
-
-        for extra_file in commit_hash_dictionary.keys():
-            if extra_file not in index_dictionary.keys():
-                staged_files[extra_file] = "deleted"
-
-        # Output -------
-        # Get branch
-        print(f"On branch {os.path.basename(self.head)}")
-
-        if (
-            bool(not_staged_files) is False
-            and bool(untracked_files) is False
-            and bool(staged_files) is False
-        ):
-            print("No changes to be commited")
+                print(f"Staged for commit:\n{staged_files}\n")
+                print(f"Not staged for commit:\n{not_staged_files}\n")
+                print(f"Untracked:\n{untracked_files}\n")
         else:
-            print(f"Staged for commit:\n{staged_files}\n")
-            print(f"Not staged for commit:\n{not_staged_files}\n")
-            print(f"Untracked:\n{untracked_files}\n")
+            print("No changes to be committed")
 
     def subtree_hashes(self, tree_hash, tree_name=""):
         tree_content = f"{self.cat(tree_hash, '-p')}".split("\n")
@@ -780,6 +787,45 @@ class HVC:
         # TODO: Create a ORIG_HEAD file that contains the hash of the previous commit, before doing a potentially dangerous operation(like merging branches)
         # After merge is done, a new commit object is created with the updated files
         pass
+
+    def log(self):
+        # Get hash of last commit
+        last_commit_file = open(f"{self.repository_directory}/{self.head}", "r")
+        last_commit_hash = last_commit_file.read()
+        last_commit_file.close()
+
+        log_output = self.get_commit_history(last_commit_hash)
+
+    def get_commit_history(self, child_hash):
+        # Get content
+        child_commit_content = f"{self.cat(child_hash, '-p')}"
+
+        commit_content = child_commit_content.split("\n")
+
+        # Using hard coded indices are fine because all object content standardized, however any changes to the format will need to be changed here
+        parent_entry = commit_content[1]
+        author_entry = commit_content[2]
+        message_entry = commit_content[len(commit_content) - 1]
+
+        parent_content = parent_entry.split(" ")
+        parent_hash = parent_content[1]
+
+        # if parent_hash !=
+        # Want to test out this function however only the third commit object exists, can't access the first two and need the parent of the first commit to be 0000000000000000000000000000000000000000
+        # Therefore delete all the relevant things like objects, logs etc, to reset the whole repository and then add some changes, enough for testing
+
+        author_content = author_entry.rsplit(" ", 1)
+        author = author_content[0]
+        unix_time = author_content[1]
+
+        standard_time = time.asctime(time.gmtime(int(unix_time)))
+
+        # commit_log =
+
+        print(parent_hash)
+        print(author)
+        print(standard_time)
+        print(message_entry)
 
     def get_hashes(self):
         object_path = self.cwd + "/.hvc/objects"
