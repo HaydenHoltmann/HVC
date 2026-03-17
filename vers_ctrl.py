@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import datetime
 import time
+import sys
 
 
 class HVC:
@@ -492,6 +493,8 @@ class HVC:
                 if extra_file not in cwd_hash_list.keys():
                     not_staged_files[extra_file] = "deleted"
 
+            # TODO: if "new file" can be in staged and unstaged. staged=new file, unstaged=modified
+
             # Find "Changes to commit files"
             # index VS commit
             for file_name in index_dictionary.keys():
@@ -579,6 +582,8 @@ class HVC:
         if os.path.exists(branch_path):
             print(f'A branch called "{name}" already exists.')
         else:
+            # There are two safety features in place in order to protect against loss of work. Unable to switch branches if you have uncommitted changes,
+            # and copying the current working directory to the new branch because right now
             new_branch = open(branch_path, "w")
 
             if commit == "":
@@ -643,6 +648,8 @@ class HVC:
             f"{self.repository_directory}/{os.path.dirname(self.head)}"
         )
 
+        # TODO: Put notice up if branch has not been merged
+
         if name not in branches:
             print(f"{name} is not a branch in this repository")
             return
@@ -664,7 +671,7 @@ class HVC:
             print(f'Already on "{name}" branch')
             return
 
-        # TODO: Can't switch if there is uncommited files
+        # TODO: Can't switch if there is uncommited files(unsaved). Can switch if the file is untracked
 
         # Make sure that name is an actual branch
         branch_path = f"{self.repository_directory}/{os.path.dirname(self.head)}"
@@ -795,9 +802,26 @@ class HVC:
         last_commit_hash = last_commit_file.read()
         last_commit_file.close()
 
-        self.output_commit_history(last_commit_hash, flags)
+        # Branch info
+        current_head = os.path.basename(self.head)
+        branch_dictionary = {}
 
-    def output_commit_history(self, parent, flags):
+        for branch in os.listdir(
+            f"{self.repository_directory}/{os.path.dirname(self.head)}"
+        ):
+            if branch != current_head:
+                branch_file = open(
+                    f"{self.repository_directory}/{os.path.dirname(self.head)}/{branch}"
+                )
+                branch_hash = branch_file.read()
+                branch_dictionary[branch_hash] = branch
+                branch_file.close()
+
+        self.output_commit_history(
+            last_commit_hash, flags, current_head, last_commit_hash, branch_dictionary
+        )
+
+    def output_commit_history(self, parent, flags, head, head_hash, branches):
         output_log = []
         # Get content
         child_commit_content = f"{self.cat(parent, '-p')}"
@@ -818,19 +842,41 @@ class HVC:
 
         standard_time = time.asctime(time.gmtime(int(unix_time)))
 
+        branch_output = ""
+
+        if parent == head_hash:
+            branch_output += f"(HEAD -> {head}"
+
+        # TODO: Once you fix the switch bug, check that the branch name next to the commit of another branch, disappears when that branch makes a commit that isn't
+        # part of this branches history
+        for hash in branches.keys():
+            if hash == parent:
+                if len(branch_output) > 1:
+                    print("Branch len output running")
+                    branch_output += ", "
+                else:
+                    branch_output += "("
+
+                branch_output += branches[hash]
+
+        if branch_output != "":
+            branch_output += ")"
+
         if not flags:
             # empty
-            print(f"Parent: {parent}")
+            print(f"Parent: {parent} {branch_output}")
             print(f"Author: {author}")
             print(f"Date: {standard_time}")
             print("\n")
             print(message_entry)
             print("\n")
+            print("Test output", file=sys.stderr)
+            # print("\033[96m {}\033[00m".format("hello"))
         if "--oneline" in flags:
-            print(f"{parent[:6]} {message_entry}")
+            print(f"{parent[:6]} {branch_output} {message_entry}")
 
         if parent_hash != "0000000000000000000000000000000000000000":
-            self.output_commit_history(parent_hash, flags)
+            self.output_commit_history(parent_hash, flags, head, head_hash, branches)
 
     def get_hashes(self):
         object_path = self.cwd + "/.hvc/objects"
