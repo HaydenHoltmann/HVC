@@ -3,6 +3,9 @@ import sys
 import re
 import argparse
 
+# Remove when done
+import os
+
 h1 = vers_ctrl.HVC()
 #    "init",
 #    "add",

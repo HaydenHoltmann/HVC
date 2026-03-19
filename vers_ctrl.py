@@ -908,6 +908,7 @@ class HVC:
 
     def get_head(self):
         head = open(f"{self.repository_directory}/HEAD", "r")
+
         head_output = head.read().replace("ref: ", "")
         head_output = head_output.replace("\n", "")
 

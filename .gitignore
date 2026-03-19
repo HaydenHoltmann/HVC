@@ -1,8 +1,13 @@
 #Files
 .hvc_ignore
 log.txt
+hvc.spec
+hvc
 
 #Directories
 /__pycache__
 /.hvc
 /Additionals
+/.venv
+/build
+/dist
