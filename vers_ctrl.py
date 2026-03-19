@@ -15,7 +15,7 @@ class HVC:
         self.template_directory = "Template/"
         # self.cwd = os.path.dirname(os.path.abspath(__file__))
         self.ignore_content = self.process_ignore()
-        self.cwd = ""
+        self.cwd = "../hvc_python"
         self.repository_directory = ".hvc"
         self.objects_directory = self.repository_directory + "/objects"
         self.directory_files = self.process_files()
@@ -175,6 +175,8 @@ class HVC:
         else:
             hash_folder = hash[:2]
             hash_file = hash[2:]
+
+            file_name = f"{self.objects_directory}/{hash_folder}/{hash_file}"
 
             hashed_file = open(
                 f"{self.objects_directory}/{hash_folder}/{hash_file}", "rb"
@@ -872,7 +874,6 @@ class HVC:
             print("\n")
             print(message_entry)
             print("\n")
-            print("Test output", file=sys.stderr)
             # print("\033[96m {}\033[00m".format("hello"))
         if "--oneline" in flags:
             print(f"{parent[:6]} {branch_output} {message_entry}")
