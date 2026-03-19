@@ -13,9 +13,10 @@ class HVC:
     # Initializes a directory as a repository
     def __init__(self):
         self.template_directory = "Template/"
-        self.cwd = os.path.dirname(os.path.abspath(__file__))
+        # self.cwd = os.path.dirname(os.path.abspath(__file__))
         self.ignore_content = self.process_ignore()
-        self.repository_directory = self.cwd + "/.hvc"
+        self.cwd = ""
+        self.repository_directory = ".hvc"
         self.objects_directory = self.repository_directory + "/objects"
         self.directory_files = self.process_files()
         self.object_types = {"blob": "000001", "tree": "000002", "commit": "000003"}
@@ -242,7 +243,8 @@ class HVC:
                 directories.append(file)
 
         # Add root directory to list
-        directories.append(self.cwd)
+        # directories.append(self.cwd)
+        directories.append(f"../{os.path.basename(os.getcwd())}")
 
         # Track files. If folder empty, it does not become a tree object
         for paths in directories:
@@ -443,8 +445,8 @@ class HVC:
         cwd_hash_list = {}
 
         for file in self.directory_files:
-            if not os.path.isdir(f"{self.cwd}/{file}"):
-                open_file = open(f"{self.cwd}/{file}", "r")
+            if not os.path.isdir(file):
+                open_file = open(f"{file}")
                 file_content = open_file.read()
                 open_file.close()
 
