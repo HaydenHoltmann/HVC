@@ -7,6 +7,7 @@ import re
 import datetime
 import time
 import sys
+import pydoc
 
 
 class HVC:
@@ -821,9 +822,22 @@ class HVC:
                 branch_dictionary[branch_hash] = branch
                 branch_file.close()
 
-        self.output_commit_history(
-            last_commit_hash, flags, current_head, last_commit_hash, branch_dictionary
+        pydoc.pager(
+            "\n".join(
+                self.output_commit_history(
+                    last_commit_hash,
+                    flags,
+                    current_head,
+                    last_commit_hash,
+                    branch_dictionary,
+                )
+            )
         )
+
+        # pydoc.pager(
+        # "Hello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\nHello World\n"
+        # )
+        # pydoc.pager("End of doc")
 
     def output_commit_history(self, parent, flags, head, head_hash, branches):
         output_log = []
@@ -856,7 +870,6 @@ class HVC:
         for hash in branches.keys():
             if hash == parent:
                 if len(branch_output) > 1:
-                    print("Branch len output running")
                     branch_output += ", "
                 else:
                     branch_output += "("
@@ -868,18 +881,22 @@ class HVC:
 
         if not flags:
             # empty
-            print(f"Parent: {parent} {branch_output}")
-            print(f"Author: {author}")
-            print(f"Date: {standard_time}")
-            print("\n")
-            print(message_entry)
-            print("\n")
+            output_log.append(f"Parent: {parent} {branch_output}")
+            output_log.append(f"Author: {author}")
+            output_log.append(f"Date: {standard_time}\n")
+            # output_log.append("\n")
+            output_log.append(f"     {message_entry}\n")
+            # output_log.append("\n")
             # print("\033[96m {}\033[00m".format("hello"))
         if "--oneline" in flags:
-            print(f"{parent[:6]} {branch_output} {message_entry}")
+            output_log.append(f"{parent[:6]} {branch_output} {message_entry}")
 
         if parent_hash != "0000000000000000000000000000000000000000":
-            self.output_commit_history(parent_hash, flags, head, head_hash, branches)
+            output_log += self.output_commit_history(
+                parent_hash, flags, head, head_hash, branches
+            )
+
+        return output_log
 
     def get_hashes(self):
         object_path = self.cwd + "/.hvc/objects"
