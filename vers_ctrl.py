@@ -444,6 +444,7 @@ class HVC:
 
     # Tracks changes to files
     def status(self, flag=""):
+        print(f"self.head in status(): {self.head}")
         # Get hashes for files in the cwd -------
         cwd_hash_list = {}
 
@@ -693,7 +694,9 @@ class HVC:
         branches = os.listdir(branch_path)
 
         if name in branches:
-            # Point HEAD to new branch
+            # Point HEAD to new branch-------
+
+            # Get branch path from HEAD (contains the HEAD format unlike self.head which just contains the reference)
             head = open(f"{self.repository_directory}/HEAD", "r")
             head_content = head.read()
             head.close()
@@ -704,7 +707,7 @@ class HVC:
             old_branch.close()
             old_branch_name = os.path.basename(self.head)
 
-            # Writes new branch to point to
+            # Writes new branch to point to in HEAD
             new_head = open(f"{self.repository_directory}/HEAD", "w")
             new_head.write(f"{os.path.dirname(head_content)}/{name}")
             new_head.close()
@@ -730,24 +733,44 @@ class HVC:
 
             head_log.close()
 
+            # -------
+
             # Replace files of old branch with new branch files (be careful not to delete everything...again:) ) -------
-            # Extract tree from commit object
-            # We want the content of the new branch, because we are swapping content to the new branch
-            commit_content = str(self.cat(new_branch_hash, "-p")).split("\n")
 
             # If the branch hashes are the same, make no changes
             if new_branch_hash == old_branch_hash:
                 return
             else:
-                for entry in commit_content:
-                    if "tree" in entry:
-                        tree = entry.replace("tree ", "")
-                        self.replace_repository(tree)
+                # Extract tree from commit object
+                old_commit_content = str(self.cat(old_branch_hash, "-p")).split("\n")
+                new_commit_content = str(self.cat(new_branch_hash, "-p")).split("\n")
 
+                old_tree = ""
+                new_tree = ""
+
+                for entry in old_commit_content:
+                    if "tree" in entry:
+                        old_tree = entry.replace("tree ", "")
+
+                for entry in new_commit_content:
+                    if "tree" in entry:
+                        new_tree = entry.replace("tree ", "")
+                    # self.replace_repository("", tree)
+
+                self.replace_repository(old_tree, new_tree)
+
+            # -------
         else:
             print(f'"{name}" is not a branch in this repository.')
 
-    def replace_repository(self, tree):
+    # Does the deleting of files
+    def replace_repository(self, old_tree, new_tree):
+        # For now these should not be empty
+        if old_tree == "" or new_tree == "":
+            return
+
+    """
+    def replace_repository(self, old_tree, new_tree):
         # TODO: Safety feature to not mess up entire repository when switching between branches (Not really needed because each object contains it's content)
 
         # TODO: If a file exists in the old repository but not in the new one, you need to delete it. Makes sure that when you switch back to the old repository that you create the file
@@ -755,7 +778,7 @@ class HVC:
         # TODO: If a file is the same in both branches then unstaged changes can be shared between branches. If they are different, then commit before switch
 
         # Find the contents of the tree
-        tree_entries = str(self.cat(tree, "-p")).split("\n")
+        tree_entries = str(self.cat(new_tree, "-p")).split("\n")
 
         for entry in tree_entries:
             entry_split = entry.split(" ")
@@ -809,10 +832,11 @@ class HVC:
                                 print("Switch was successful")
 
                 elif entry_dictionary["type"] == "tree":
-                    self.replace_repository(entry_dictionary["hash"])
+                    self.replace_repository("", entry_dictionary["hash"])
 
         # TODO: Overwrite tree versions of the files in the directory
         # TODO: Recursively do the above for any subtrees in the main tree
+"""
 
     def merge(self):
         # TODO: Create a ORIG_HEAD file that contains the hash of the previous commit, before doing a potentially dangerous operation(like merging branches)
