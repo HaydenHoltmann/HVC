@@ -443,7 +443,7 @@ class HVC:
         print(commit_confirmation_message)
 
     # Tracks changes to files
-    def status(self):
+    def status(self, flag=""):
         # Get hashes for files in the cwd -------
         cwd_hash_list = {}
 
@@ -519,19 +519,29 @@ class HVC:
                     staged_files[extra_file] = "deleted"
 
             # Output -------
-            # Get branch
-            print(f"On branch {os.path.basename(self.head)}")
+            if flag == "-s":
+                print("Flag running....")
+                changes = False
 
-            if (
-                bool(not_staged_files) is False
-                and bool(untracked_files) is False
-                and bool(staged_files) is False
-            ):
-                print("No changes to be committed")
+                if staged_files or not_staged_files:
+                    changes = True
+
+                return changes
+
             else:
-                print(f"Staged for commit:\n{staged_files}\n")
-                print(f"Not staged for commit:\n{not_staged_files}\n")
-                print(f"Untracked:\n{untracked_files}\n")
+                # Get branch
+                print(f"On branch {os.path.basename(self.head)}")
+
+                if (
+                    bool(not_staged_files) is False
+                    and bool(untracked_files) is False
+                    and bool(staged_files) is False
+                ):
+                    print("No changes to be committed")
+                else:
+                    print(f"Staged for commit:\n{staged_files}\n")
+                    print(f"Not staged for commit:\n{not_staged_files}\n")
+                    print(f"Untracked:\n{untracked_files}\n")
         else:
             print("No changes to be committed")
 
@@ -720,22 +730,30 @@ class HVC:
 
             head_log.close()
 
-            # TODO: Replace files of old branch with new branch files (be careful not to delete everything...again:) ) -------
+            # Replace files of old branch with new branch files (be careful not to delete everything...again:) ) -------
             # Extract tree from commit object
             # We want the content of the new branch, because we are swapping content to the new branch
             commit_content = str(self.cat(new_branch_hash, "-p")).split("\n")
 
-            for entry in commit_content:
-                if "tree" in entry:
-                    tree = entry.replace("tree ", "")
-                    self.replace_repository(tree)
+            # If the branch hashes are the same, make no changes
+            if new_branch_hash == old_branch_hash:
+                return
+            else:
+                for entry in commit_content:
+                    if "tree" in entry:
+                        tree = entry.replace("tree ", "")
+                        self.replace_repository(tree)
 
         else:
             print(f'"{name}" is not a branch in this repository.')
 
     def replace_repository(self, tree):
         # TODO: Safety feature to not mess up entire repository when switching between branches (Not really needed because each object contains it's content)
+
         # TODO: If a file exists in the old repository but not in the new one, you need to delete it. Makes sure that when you switch back to the old repository that you create the file
+
+        # TODO: If a file is the same in both branches then unstaged changes can be shared between branches. If they are different, then commit before switch
+
         # Find the contents of the tree
         tree_entries = str(self.cat(tree, "-p")).split("\n")
 

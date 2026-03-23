@@ -52,6 +52,8 @@ cat_group.add_argument("hash")
 
 # status command
 status = subparsers.add_parser("status")
+
+status.add_argument("-s", action="store_true")
 # branch command
 branch = subparsers.add_parser("branch")
 
@@ -91,7 +93,10 @@ match args.command:
         elif args.s:
             h1.cat(args.hash, "-s")
     case "status":
-        h1.status()
+        if args.s:
+            h1.status("-s")
+        else:
+            h1.status()
     case "branch":
         if args.branch_name is None and args.hash is None:
             h1.branch()
