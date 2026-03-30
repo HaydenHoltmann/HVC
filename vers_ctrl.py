@@ -444,7 +444,6 @@ class HVC:
 
     # Tracks changes to files
     def status(self, flag=""):
-        print(f"self.head in status(): {self.head}")
         # Get hashes for files in the cwd -------
         cwd_hash_list = {}
 
@@ -768,6 +767,90 @@ class HVC:
         # For now these should not be empty
         if old_tree == "" or new_tree == "":
             return
+
+        old_tree_content = str(self.cat(old_tree, "-p")).split("\n")
+        new_tree_content = str(self.cat(new_tree, "-p")).split("\n")
+
+        old_list = []
+        new_list = []
+
+        for entry in old_tree_content:
+            old_entry_split = entry.split(" ")
+            old_dictionary = {}
+
+            if len(old_entry_split) == 4:
+                old_dictionary["type"] = old_entry_split[1]
+                old_dictionary["hash"] = old_entry_split[2]
+                old_dictionary["name"] = old_entry_split[3]
+
+                old_list.append(old_dictionary)
+
+        for entry in new_tree_content:
+            new_entry_split = entry.split(" ")
+            new_dictionary = {}
+
+            if len(new_entry_split) == 4:
+                new_dictionary["type"] = new_entry_split[1]
+                new_dictionary["hash"] = new_entry_split[2]
+                new_dictionary["name"] = new_entry_split[3]
+
+                new_list.append(new_dictionary)
+
+        # If trees have the same hash, then there is no changes in that folder and the the files should not be overwritten
+        for new_list_item in new_list:
+            # If new_list_item is in old_list, whether it is a blob or a tree, they are both matches and shouldn't be changed (Do nothing go to the next item)
+            if new_list_item in old_list:
+                continue
+
+            # The hashes don't match
+            else:
+                # If not in old_list, it means that either the new_list_item doesn't exist in the old branch or their hashes don't match
+                new_list_item_exist = False
+
+                for old_list_item in old_list:
+                    # Handle hashes don't match (Commit then replace)
+                    if new_list_item["type"] == "tree":
+                        pass
+                    else:
+                        if new_list_item["name"] in old_list_item.values():
+                            print(
+                                f"{new_list_item['name']} exists in both lists but has different hashes"
+                            )
+
+                            new_list_item_exist = True
+
+                            # Do something here (Commit and overwrite)
+                            if self.status("-s") is True:
+                                print(
+                                    "You need to commit changes before switching branches"
+                                )
+
+                                # quit()
+                            else:
+                                # TODO: Overwrite
+                                overwrite_file = open(new_list_item["name"])
+                                pass
+
+                            continue
+
+                        # Exists in one list
+                        # Handle doesn't exist in new but does in old (Delete File)???
+                        elif old_list_item["name"] not in new_list_item.values():
+                            # TODO: Do something here (Delete)
+                            continue
+
+                # Handle doesn't exist in old but does in new(Create file)
+                if new_list_item_exist is False:
+                    # TODO: Create file that exists in the new branch but not in the old branch
+                    pass
+
+                if new_list_item["type"] == "tree":
+                    print(f"Item is a tree {new_list_item}")
+
+        # Else go into the tree
+
+        # If a tree or file doesn't exist in the branch you are going to, delete it
+        # If a tree or file exists in the branch you are going to but not in the branch you are currently on, create the files from the objects stored
 
     """
     def replace_repository(self, old_tree, new_tree):
