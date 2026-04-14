@@ -11,3 +11,4 @@ hvc
 /.venv
 /build
 /dist
+/test_folder

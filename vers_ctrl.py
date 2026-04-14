@@ -657,6 +657,7 @@ class HVC:
         # Can't delete the branch you are currently on
         if name == os.path.basename(self.head):
             print("Can't delete a branch that you are on, switch first.")
+            quit()
 
         # Check that branch exists
         branches = os.listdir(
@@ -678,6 +679,8 @@ class HVC:
         os.remove(
             f"{self.repository_directory}/logs/{os.path.dirname(self.head)}/{name}"
         )
+
+        print("branch_delete() finish running ...")
 
     # Switches between branches
     def switch(self, name):
@@ -706,6 +709,134 @@ class HVC:
             old_branch.close()
             old_branch_name = os.path.basename(self.head)
 
+            print(
+                f"New branch path: {self.repository_directory}/{os.path.dirname(self.head)}/{name}"
+            )
+
+            new_branch = open(
+                f"{self.repository_directory}/{os.path.dirname(self.head)}/{name}", "r"
+            )
+            new_branch_hash = new_branch.read()
+            new_branch.close()
+
+            # Replace files of old branch with new branch files (be careful not to delete everything...again:) ) -------
+
+            # If the branch hashes are the same, make no changes
+            if new_branch_hash == old_branch_hash:
+                print("Branches are identical")
+            else:
+                # Extract tree from commit object
+                old_commit_content = str(self.cat(old_branch_hash, "-p")).split("\n")
+                new_commit_content = str(self.cat(new_branch_hash, "-p")).split("\n")
+
+                old_commit_hash = ""
+                new_commit_hash = ""
+
+                for line in old_commit_content:
+                    if "tree" in line:
+                        old_commit_hash = line.replace("tree ", "")
+
+                for line in new_commit_content:
+                    if "tree" in line:
+                        new_commit_hash = line.replace("tree ", "")
+
+                old_object_dictionary = self.get_object_dictionary(old_commit_hash)
+                new_object_dictionary = self.get_object_dictionary(new_commit_hash)
+
+                for hash in old_object_dictionary.keys():
+                    # Same hashes
+                    if hash in new_object_dictionary.keys():
+                        # Same name and hash -> Do nothing
+                        if new_object_dictionary[hash] == old_object_dictionary[hash]:
+                            print(f"Identical File: {new_object_dictionary[hash]}")
+                            # Identical file does nothing so it's fine if it comes before the commit error
+
+                        # Different name, same hash -> Change file name
+                        else:
+                            print(
+                                f"Different name: {new_object_dictionary[hash]} {old_object_dictionary[hash]}"
+                            )
+
+                            if self.status("-s") is True:
+                                print(
+                                    "You need to commit before you can switch branches"
+                                )
+                                quit()
+                            else:
+                                file_path = ""
+
+                                for file in self.directory_files:
+                                    if old_object_dictionary[hash] in file:
+                                        file_path = file
+
+                                os.rename(
+                                    file_path,
+                                    f"{os.path.dirname(file_path)}/{new_object_dictionary[hash]}",
+                                )
+
+                    # Different hashes
+                    else:
+                        file_path = ""
+
+                        for file in self.directory_files:
+                            if old_object_dictionary[hash] in file:
+                                file_path = file
+
+                        # No actions will be taken if there is still things to be committed
+                        if self.status("-s") is True:
+                            print("You need to commit before you can switch branches")
+                            quit()
+
+                        # Different hashes, same name -> Overwrite
+                        if (
+                            old_object_dictionary[hash]
+                            in new_object_dictionary.values()
+                        ):
+                            print(f"Overwriting file {old_object_dictionary[hash]}")
+
+                            # TODO: Change hash(which is unique identifier for the object in the old branch) to whatever the hash is of the file version in the new branch
+                            new_hash = ""
+
+                            for new_object in new_object_dictionary:
+                                if old_object_dictionary[hash] in new_object:
+                                    print(new_object)
+
+                            hash_content = f"{self.cat(hash, '-p')}"
+
+                            print(f"Hash Content: {hash_content}")
+
+                            # Overwrites file -------
+                            overwrite_file = open(file_path, "w")
+                            overwrite_file.write(hash_content)
+                            overwrite_file.close()
+
+                        # Different hashes and name -> Delete (Name and hash doesn't exist in new_object_list)
+                        else:
+                            print(f"Deleting file {old_object_dictionary[hash]}")
+                            # Deletes file not in new branch
+                            os.remove(file_path)
+
+                for hash in new_object_dictionary:
+                    if hash not in old_object_dictionary:
+                        # Hash only in new list -> Create
+                        if (
+                            new_object_dictionary[hash]
+                            not in old_object_dictionary.values()
+                        ):
+                            print(f"Creating file {new_object_dictionary[hash]} {hash}")
+                            hash_content = f"{self.cat(hash, '-p')}"
+                            file_path = ""
+
+                            for file in self.directory_files:
+                                if new_object_dictionary[hash] in file:
+                                    file_path = file
+
+                            # Creates new file
+                            new_file = open(file_path, "w")
+                            new_file.write(hash_content)
+                            new_file.close()
+
+            # -------
             # Writes new branch to point to in HEAD
             new_head = open(f"{self.repository_directory}/HEAD", "w")
             new_head.write(f"{os.path.dirname(head_content)}/{name}")
@@ -713,12 +844,6 @@ class HVC:
 
             # Change value of self.head to point to the current branch -------
             self.head = self.get_head()
-
-            new_branch = open(f"{self.repository_directory}/{self.head}", "r")
-            new_branch_hash = new_branch.read()
-            new_branch.close()
-
-            print(f'Switched to branch "{name}"')
 
             # Update HEAD log -------
             head_log = open(f"{self.repository_directory}/logs/HEAD", "a")
@@ -733,124 +858,35 @@ class HVC:
             head_log.close()
 
             # -------
-
-            # Replace files of old branch with new branch files (be careful not to delete everything...again:) ) -------
-
-            # If the branch hashes are the same, make no changes
-            if new_branch_hash == old_branch_hash:
-                return
-            else:
-                # Extract tree from commit object
-                old_commit_content = str(self.cat(old_branch_hash, "-p")).split("\n")
-                new_commit_content = str(self.cat(new_branch_hash, "-p")).split("\n")
-
-                old_tree = ""
-                new_tree = ""
-
-                for entry in old_commit_content:
-                    if "tree" in entry:
-                        old_tree = entry.replace("tree ", "")
-
-                for entry in new_commit_content:
-                    if "tree" in entry:
-                        new_tree = entry.replace("tree ", "")
-                    # self.replace_repository("", tree)
-
-                self.replace_repository(old_tree, new_tree)
-
-            # -------
+            print(f'Switched to branch "{name}"')
         else:
             print(f'"{name}" is not a branch in this repository.')
 
-    # Does the deleting of files
-    def replace_repository(self, old_tree, new_tree):
-        # For now these should not be empty
-        if old_tree == "" or new_tree == "":
-            return
+    # Retrieves all the names and hashes for a given tree
+    def get_object_dictionary(self, tree_hash):
+        output_dictionary = {}
 
-        old_tree_content = str(self.cat(old_tree, "-p")).split("\n")
-        new_tree_content = str(self.cat(new_tree, "-p")).split("\n")
+        tree_content = f"{self.cat(tree_hash, '-p')}"
 
-        old_list = []
-        new_list = []
+        content_list = tree_content.split("\n")
 
-        for entry in old_tree_content:
-            old_entry_split = entry.split(" ")
-            old_dictionary = {}
+        for entry in content_list:
+            if entry != "":
+                entry_list = entry.split(" ")
 
-            if len(old_entry_split) == 4:
-                old_dictionary["type"] = old_entry_split[1]
-                old_dictionary["hash"] = old_entry_split[2]
-                old_dictionary["name"] = old_entry_split[3]
+                entry_name = ""
+                entry_hash = ""
 
-                old_list.append(old_dictionary)
+                if len(entry_list) == 4:
+                    entry_name = entry_list[3]
+                    entry_hash = entry_list[2]
 
-        for entry in new_tree_content:
-            new_entry_split = entry.split(" ")
-            new_dictionary = {}
+                if "tree" in entry_list:
+                    output_dictionary.update(self.get_object_dictionary(entry_hash))
+                else:
+                    output_dictionary[entry_hash] = entry_name
 
-            if len(new_entry_split) == 4:
-                new_dictionary["type"] = new_entry_split[1]
-                new_dictionary["hash"] = new_entry_split[2]
-                new_dictionary["name"] = new_entry_split[3]
-
-                new_list.append(new_dictionary)
-
-        # If trees have the same hash, then there is no changes in that folder and the the files should not be overwritten
-        for new_list_item in new_list:
-            # If new_list_item is in old_list, whether it is a blob or a tree, they are both matches and shouldn't be changed (Do nothing go to the next item)
-            if new_list_item in old_list:
-                continue
-
-            # The hashes don't match
-            else:
-                # If not in old_list, it means that either the new_list_item doesn't exist in the old branch or their hashes don't match
-                new_list_item_exist = False
-
-                for old_list_item in old_list:
-                    # Handle hashes don't match (Commit then replace)
-                    if new_list_item["type"] == "tree":
-                        pass
-                    else:
-                        if new_list_item["name"] in old_list_item.values():
-                            print(
-                                f"{new_list_item['name']} exists in both lists but has different hashes"
-                            )
-
-                            new_list_item_exist = True
-
-                            # Do something here (Commit and overwrite)
-                            if self.status("-s") is True:
-                                print(
-                                    "You need to commit changes before switching branches"
-                                )
-
-                                # quit()
-                            else:
-                                # TODO: Overwrite
-                                overwrite_file = open(new_list_item["name"])
-                                pass
-
-                            continue
-
-                        # Exists in one list
-                        # Handle doesn't exist in new but does in old (Delete File)???
-                        elif old_list_item["name"] not in new_list_item.values():
-                            # TODO: Do something here (Delete)
-                            continue
-
-                # Handle doesn't exist in old but does in new(Create file)
-                if new_list_item_exist is False:
-                    # TODO: Create file that exists in the new branch but not in the old branch
-                    pass
-
-                if new_list_item["type"] == "tree":
-                    print(f"Item is a tree {new_list_item}")
-
-        # Else go into the tree
-
-        # If a tree or file doesn't exist in the branch you are going to, delete it
-        # If a tree or file exists in the branch you are going to but not in the branch you are currently on, create the files from the objects stored
+        return output_dictionary
 
     """
     def replace_repository(self, old_tree, new_tree):
